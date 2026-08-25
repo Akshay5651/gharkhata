@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "GharKhata",
+    "slug": "gharkhata",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "gharkhata",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "android": {
+      "package": "com.gharkhata.app",
+      "minSdkVersion": 24,
+      "edgeToEdgeEnabled": true,
+      "allowBackup": false,
+      "adaptiveIcon": {
+        "backgroundColor": "#0B0F14"
+      },
+      "permissions": [],
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.VIBRATE"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-sqlite",
+      "expo-notifications",
+      "./plugins/withWhatsAppQueries",
+      "@react-native-community/datetimepicker"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}
