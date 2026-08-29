@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -13,8 +13,10 @@ import { Ionicons } from '@expo/vector-icons';
 import {
   clearAttendance,
   getAttendanceForDate,
+  getSetting,
   listHelpers,
   markAttendance,
+  setSetting,
 } from '@/lib/db';
 import { FREE_HELPER_LIMIT, isPremium, remainingHelperSlots } from '@/lib/entitlements';
 import { formatDateKey, todayKey } from '@/lib/dates';
@@ -66,6 +68,15 @@ export default function HomeScreen() {
   }, [date]);
 
   useFocusEffect(useCallback(() => load(), [load]));
+
+  // First launch ever, not first focus of this tab — the flag persists in
+  // SQLite, so this fires once per install, not once per app open.
+  useEffect(() => {
+    if (getSetting('guide_shown_once') !== '1') {
+      setSetting('guide_shown_once', '1');
+      setGuideOpen(true);
+    }
+  }, []);
 
   // Tapping the status a worker already has clears it, so a mistap costs one
   // more tap rather than a trip into another screen.
