@@ -349,7 +349,15 @@ export default function SalaryScreen() {
         helper={historyFor}
         ledger={historyFor ? getAllLedgerEntries(historyFor.id) : []}
         payments={historyFor ? getAllPayments(historyFor.id) : []}
-        onClose={() => setHistoryFor(null)}
+        onClose={() => {
+          setHistoryFor(null);
+          // The card behind the sheet can hold a stale balance visually —
+          // RN's Modal is a separate native window on Android, so a state
+          // update while it's open does not reliably repaint what's underneath
+          // until the window closes. Reloading here, not just on delete,
+          // guarantees the number is right the moment the sheet is gone.
+          load();
+        }}
         onDeleteLedger={onDeleteLedger}
         onDeletePayment={onDeletePayment}
       />

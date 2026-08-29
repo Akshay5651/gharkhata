@@ -75,6 +75,14 @@ jobs:
         run: |
           echo "tag=build-$(date +%Y%m%d-%H%M%S)" >> "$GITHUB_OUTPUT"
 
+      # The default Gradle output filename (app-release.apk) is what shows
+      # up on the GitHub Releases download page — renaming it here is what
+      # makes that page read as "GharKhata.apk" instead of a generic file.
+      - name: Rename APK for download
+        run: |
+          mkdir -p dist
+          cp android/app/build/outputs/apk/release/app-release.apk dist/GharKhata.apk
+
       - name: Publish GitHub Release with the APK
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -84,6 +92,6 @@ jobs:
             title="$title — ${{ github.event.inputs.label }}"
           fi
           gh release create "${{ steps.meta.outputs.tag }}" \
-            android/app/build/outputs/apk/release/app-release.apk \
+            dist/GharKhata.apk \
             --title "$title" \
-            --notes "Build from commit ${{ github.sha }}. On your phone: download the APK, allow 'install from unknown sources' if asked, then tap it to install."
+            --notes "Build from commit ${{ github.sha }}. On your phone: download GharKhata.apk, allow 'install from unknown sources' if asked, then tap it to install."
