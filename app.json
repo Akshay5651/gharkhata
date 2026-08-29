@@ -7,13 +7,15 @@
     "scheme": "gharkhata",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
+    "icon": "./assets/images/icon.png",
     "android": {
       "package": "com.gharkhata.app",
       "minSdkVersion": 24,
       "edgeToEdgeEnabled": true,
       "allowBackup": false,
       "adaptiveIcon": {
-        "backgroundColor": "#0B0F14"
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
       },
       "permissions": [],
       "blockedPermissions": [
