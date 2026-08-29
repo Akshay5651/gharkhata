@@ -54,15 +54,21 @@ jobs:
           restore-keys: |
             gradle-${{ runner.os }}-
 
-      # Debug-signed: no keystore secrets to manage for a testing-only APK.
-      # It installs and runs identically to a release build; only actual
-      # Play Store submission needs a proper release keystore, which is a
-      # separate, later decision.
-      - name: Build debug APK
+      # The `release` build VARIANT, not the `debug` one — this is about JS
+      # bundling, not signing. React Native's debug variant deliberately
+      # skips packing the JS bundle into the APK so it can hot-reload from a
+      # running Metro server; installed standalone, it fails with "Unable to
+      # load script". The release variant embeds the bundle so the APK runs
+      # on its own. It's still debug-*signed* (same debug.keystore, no new
+      # secrets) — Expo's template wires the release buildType to the debug
+      # signingConfig by default specifically so this works without a real
+      # keystore. A proper release keystore only matters for Play Store
+      # submission later.
+      - name: Build release APK
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleRelease
 
       - name: Set build metadata
         id: meta
@@ -78,6 +84,6 @@ jobs:
             title="$title — ${{ github.event.inputs.label }}"
           fi
           gh release create "${{ steps.meta.outputs.tag }}" \
-            android/app/build/outputs/apk/debug/app-debug.apk \
+            android/app/build/outputs/apk/release/app-release.apk \
             --title "$title" \
-            --notes "Debug build from commit ${{ github.sha }}. On your phone: download the APK, allow 'install from unknown sources' if asked, then tap it to install."
+            --notes "Build from commit ${{ github.sha }}. On your phone: download the APK, allow 'install from unknown sources' if asked, then tap it to install."
