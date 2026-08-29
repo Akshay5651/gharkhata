@@ -1,0 +1,83 @@
+name: Build Android APK
+
+# Manual trigger only — no build runs automatically on push. This is
+# deliberate: builds happen when a batch of changes actually feels ready to
+# test as an installed app, not on every commit. Click "Run workflow" in the
+# Actions tab whenever you want a fresh APK.
+on:
+  workflow_dispatch:
+    inputs:
+      label:
+        description: "Short note for this build (optional, e.g. 'advances feature')"
+        required: false
+        default: ""
+
+# Needed so the default GITHUB_TOKEN can publish a release with the APK.
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # Regenerates the native android/ project from app.json + our config
+      # plugins. Nothing native is committed to the repo — this is the same
+      # thing `expo prebuild` does locally, just running on a clean machine.
+      - name: Generate native Android project
+        run: npx expo prebuild --platform android --no-install
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('android/**/*.gradle*', 'android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      # Debug-signed: no keystore secrets to manage for a testing-only APK.
+      # It installs and runs identically to a release build; only actual
+      # Play Store submission needs a proper release keystore, which is a
+      # separate, later decision.
+      - name: Build debug APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Set build metadata
+        id: meta
+        run: |
+          echo "tag=build-$(date +%Y%m%d-%H%M%S)" >> "$GITHUB_OUTPUT"
+
+      - name: Publish GitHub Release with the APK
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          title="GharKhata ${{ steps.meta.outputs.tag }}"
+          if [ -n "${{ github.event.inputs.label }}" ]; then
+            title="$title — ${{ github.event.inputs.label }}"
+          fi
+          gh release create "${{ steps.meta.outputs.tag }}" \
+            android/app/build/outputs/apk/debug/app-debug.apk \
+            --title "$title" \
+            --notes "Debug build from commit ${{ github.sha }}. On your phone: download the APK, allow 'install from unknown sources' if asked, then tap it to install."
