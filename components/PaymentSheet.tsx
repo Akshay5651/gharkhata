@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Linking,
   Modal,
@@ -16,6 +15,7 @@ import { Helper, Payment } from '@/lib/types';
 import { formatINR, toPaise, toRupees } from '@/lib/money';
 import { Colors, radius, space, useTheme } from '@/lib/theme';
 import { useI18n } from '@/lib/i18n';
+import { showAppAlert } from '@/components/AppAlertHost';
 
 export interface PaymentSheetProps {
   visible: boolean;
@@ -76,7 +76,7 @@ export default function PaymentSheet({
    */
   const onPayViaUpi = async () => {
     if (!helper.upi_id) {
-      Alert.alert(t.noUpiTitle, t.noUpiBody);
+      showAppAlert(t.noUpiTitle, t.noUpiBody, [{ text: t.ok }]);
       return;
     }
     const params = [
@@ -92,7 +92,7 @@ export default function PaymentSheet({
 
     const canOpen = await Linking.canOpenURL(url);
     if (!canOpen) {
-      Alert.alert(t.noUpiTitle, t.noUpiAppBody);
+      showAppAlert(t.noUpiTitle, t.noUpiAppBody, [{ text: t.ok }]);
       return;
     }
     await Linking.openURL(url);

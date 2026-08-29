@@ -216,6 +216,10 @@ const en = {
   noUpiTitle: 'No UPI ID saved',
   noUpiBody: 'Add this worker’s UPI ID from Edit worker to use this shortcut.',
   noUpiAppBody: 'No UPI app found on this phone to handle the payment.',
+
+  ok: 'OK',
+  deleteWorkerTitle: (name: string) => `Delete ${name}?`,
+  deleteWorkerBody: 'Their attendance and payment history stays saved — you just won’t see them day to day.',
 };
 
 type Dict = typeof en;
@@ -420,6 +424,10 @@ const hi: Dict = {
   noUpiTitle: 'यूपीआई आईडी नहीं है',
   noUpiBody: 'यह शॉर्टकट इस्तेमाल करने के लिए Edit worker से यूपीआई आईडी जोड़ें।',
   noUpiAppBody: 'इस फ़ोन पर भुगतान के लिए कोई यूपीआई ऐप नहीं मिला।',
+
+  ok: 'ठीक है',
+  deleteWorkerTitle: (name: string) => `${name} को हटाएँ?`,
+  deleteWorkerBody: 'इनकी हाज़िरी और भुगतान का रिकॉर्ड सुरक्षित रहेगा — बस रोज़ाना दिखना बंद हो जाएगा।',
 };
 
 const DICTS: Record<Lang, Dict> = { en, hi };

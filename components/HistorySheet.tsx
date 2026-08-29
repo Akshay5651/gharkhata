@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import {
-  Alert,
   Modal,
   Pressable,
   ScrollView,
@@ -14,6 +13,7 @@ import { formatDateKey } from '@/lib/dates';
 import { formatINR } from '@/lib/money';
 import { Colors, radius, space, useTheme } from '@/lib/theme';
 import { useI18n } from '@/lib/i18n';
+import { showAppAlert } from '@/components/AppAlertHost';
 
 type Row =
   | { kind: 'ledger'; entry: LedgerEntry }
@@ -86,7 +86,7 @@ export default function HistorySheet({
   };
 
   const confirmDelete = (row: Row) => {
-    Alert.alert(t.deleteEntry, t.deleteEntryBody, [
+    showAppAlert(t.deleteEntry, t.deleteEntryBody, [
       { text: t.cancel, style: 'cancel' },
       {
         text: t.delete,

@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Alert,
   Linking,
   Pressable,
   ScrollView,
@@ -23,6 +22,7 @@ import {
 } from '@/lib/reminders';
 import { Colors, radius, space, ThemeMode, useTheme } from '@/lib/theme';
 import { Lang, LANG_NAMES, useI18n } from '@/lib/i18n';
+import { showAppAlert } from '@/components/AppAlertHost';
 
 /**
  * TODO before publishing: replace with the support address you want feedback
@@ -91,7 +91,7 @@ export default function SettingsScreen() {
       const result = await enableExportReminder();
       if (result === 'denied') {
         setReminderOn(false);
-        Alert.alert(t.reminderDeniedTitle, t.reminderDeniedBody);
+        showAppAlert(t.reminderDeniedTitle, t.reminderDeniedBody, [{ text: t.ok }]);
         return;
       }
       setReminderOn(true);
@@ -106,7 +106,7 @@ export default function SettingsScreen() {
   const onSendFeedback = async () => {
     const body = feedback.trim();
     if (!body) {
-      Alert.alert(t.feedback, t.feedbackEmpty);
+      showAppAlert(t.feedback, t.feedbackEmpty, [{ text: t.ok }]);
       return;
     }
     const url =
@@ -123,7 +123,7 @@ export default function SettingsScreen() {
   };
 
   const onUpgrade = () => {
-    Alert.alert(t.comingSoon, t.comingSoonBody);
+    showAppAlert(t.comingSoon, t.comingSoonBody, [{ text: t.ok }]);
   };
 
   const onExport = async () => {
@@ -131,14 +131,16 @@ export default function SettingsScreen() {
     try {
       await exportBackupFile();
     } catch (e) {
-      Alert.alert('!', e instanceof Error ? e.message : String(e));
+      showAppAlert('!', e instanceof Error ? e.message : String(e), [
+        { text: t.ok },
+      ]);
     } finally {
       setBusy(null);
     }
   };
 
   const onImport = () => {
-    Alert.alert(t.restoreWarnTitle, t.restoreWarnBody, [
+    showAppAlert(t.restoreWarnTitle, t.restoreWarnBody, [
       { text: t.cancel, style: 'cancel' },
       {
         text: t.restore,
@@ -148,12 +150,14 @@ export default function SettingsScreen() {
           try {
             const outcome = await importBackupFile();
             if (outcome.status === 'restored') {
-              Alert.alert(t.restoreDoneTitle, t.restoreDoneBody);
+              showAppAlert(t.restoreDoneTitle, t.restoreDoneBody, [{ text: t.ok }]);
             } else if (outcome.status === 'invalid') {
-              Alert.alert(t.restoreBadTitle, t.restoreBadBody);
+              showAppAlert(t.restoreBadTitle, t.restoreBadBody, [{ text: t.ok }]);
             }
           } catch (e) {
-            Alert.alert('!', e instanceof Error ? e.message : String(e));
+            showAppAlert('!', e instanceof Error ? e.message : String(e), [
+              { text: t.ok },
+            ]);
           } finally {
             setBusy(null);
           }

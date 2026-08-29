@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -37,6 +36,7 @@ import { formatINR } from '@/lib/money';
 import { Helper, Payment } from '@/lib/types';
 import { Colors, radius, space, useTheme } from '@/lib/theme';
 import { useI18n } from '@/lib/i18n';
+import { showAppAlert } from '@/components/AppAlertHost';
 import LedgerEntrySheet from '@/components/LedgerEntrySheet';
 import PaymentSheet from '@/components/PaymentSheet';
 import HistorySheet from '@/components/HistorySheet';
@@ -79,7 +79,7 @@ export default function SalaryScreen() {
   const changePeriod = (delta: number) => {
     const target = shiftPeriod(period, delta);
     if (delta < 0 && !canViewPeriod(target)) {
-      Alert.alert(t.olderMonths, t.olderMonthsBody);
+      showAppAlert(t.olderMonths, t.olderMonthsBody, [{ text: t.ok }]);
       return;
     }
     setPeriod(target);
@@ -97,7 +97,7 @@ export default function SalaryScreen() {
         ? `\n+${unmarkedDateKeys.length - 5}…`
         : '';
 
-    Alert.alert(
+    showAppAlert(
       t.daysBlank(unmarkedDateKeys.length),
       `${preview}${more}`,
       [
@@ -167,7 +167,9 @@ export default function SalaryScreen() {
       saveSnapshot(helper.id, period, payroll);
       await share(helper, payroll);
     } catch (e) {
-      Alert.alert('!', e instanceof Error ? e.message : String(e));
+      showAppAlert('!', e instanceof Error ? e.message : String(e), [
+        { text: t.ok },
+      ]);
     }
   };
 

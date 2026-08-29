@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -29,6 +28,7 @@ import {
 import { AttendanceStatus, Helper } from '@/lib/types';
 import { Colors, radius, space, useTheme } from '@/lib/theme';
 import { useI18n } from '@/lib/i18n';
+import { showAppAlert } from '@/components/AppAlertHost';
 import DayEditor from '@/components/DayEditor';
 
 const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -125,7 +125,7 @@ export default function CalendarScreen() {
   const changePeriod = (delta: number) => {
     const target = shiftPeriod(period, delta);
     if (delta < 0 && !canViewPeriod(target)) {
-      Alert.alert(t.olderMonths, t.olderMonthsBody);
+      showAppAlert(t.olderMonths, t.olderMonthsBody, [{ text: t.ok }]);
       return;
     }
     setPeriod(target);
@@ -149,15 +149,15 @@ export default function CalendarScreen() {
     if (!selected) return;
 
     if (dateKey > today) {
-      Alert.alert(t.futureDay, t.futureDayBody);
+      showAppAlert(t.futureDay, t.futureDayBody, [{ text: t.ok }]);
       return;
     }
     if (dateKey < selected.start_date) {
-      Alert.alert(t.beforeStart, t.beforeStartBody);
+      showAppAlert(t.beforeStart, t.beforeStartBody, [{ text: t.ok }]);
       return;
     }
     if (selected.end_date && dateKey > selected.end_date) {
-      Alert.alert(t.afterEnd, t.afterEndBody);
+      showAppAlert(t.afterEnd, t.afterEndBody, [{ text: t.ok }]);
       return;
     }
 

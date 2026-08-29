@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { initDb } from '@/lib/db';
 import { ThemeProvider, useTheme } from '@/lib/theme';
 import { I18nProvider } from '@/lib/i18n';
+import AppAlertHost from '@/components/AppAlertHost';
 
 /**
  * expo-notifications runs a push-token auto-registration side effect the
@@ -38,6 +39,7 @@ function Shell() {
           options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
         />
       </Stack>
+      <AppAlertHost />
     </>
   );
 }

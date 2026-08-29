@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import {
-  Alert,
   Platform,
   Pressable,
   ScrollView,
@@ -22,6 +21,7 @@ import { SalaryType } from '@/lib/types';
 import { Colors, radius, space, useTheme } from '@/lib/theme';
 import { useI18n } from '@/lib/i18n';
 import FieldLabel from '@/components/FieldLabel';
+import { showAppAlert } from '@/components/AppAlertHost';
 import MoneyInput from '@/components/MoneyInput';
 
 type Term = 'ongoing' | 'days' | 'months';
@@ -110,11 +110,11 @@ export default function WorkerScreen() {
   const onSave = () => {
     const rupees = Number(salary);
     if (!name.trim()) {
-      Alert.alert(t.name, t.nameRequiredBody);
+      showAppAlert(t.name, t.nameRequiredBody, [{ text: t.ok }]);
       return;
     }
     if (!Number.isFinite(rupees) || rupees <= 0) {
-      Alert.alert(salaryLabel, t.amountRequiredBody);
+      showAppAlert(salaryLabel, t.amountRequiredBody, [{ text: t.ok }]);
       return;
     }
 
@@ -136,7 +136,7 @@ export default function WorkerScreen() {
 
     if (isNew) {
       if (!canAddHelper()) {
-        Alert.alert(t.limitReached, t.slotsUsed(2, 2));
+        showAppAlert(t.limitReached, t.slotsUsed(2, 2), [{ text: t.ok }]);
         return;
       }
       createHelper(payload);
@@ -146,12 +146,15 @@ export default function WorkerScreen() {
     router.back();
   };
 
+  // Reads as "Delete" to match how a household thinks about removing a
+  // worker, but archiveHelper() is still a soft archive underneath — their
+  // attendance and payment history is kept, not erased.
   const onRemove = () => {
     if (isNew || !existing) return;
-    Alert.alert(t.remove, existing.name, [
+    showAppAlert(t.deleteWorkerTitle(existing.name), t.deleteWorkerBody, [
       { text: t.cancel, style: 'cancel' },
       {
-        text: t.archive,
+        text: t.delete,
         style: 'destructive',
         onPress: () => {
           archiveHelper(existing.id);
