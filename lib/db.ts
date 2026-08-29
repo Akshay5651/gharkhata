@@ -88,6 +88,8 @@ const MIGRATIONS: string[] = [
   ALTER TABLE helper ADD COLUMN default_quantity REAL;
   ALTER TABLE attendance ADD COLUMN quantity REAL;
   `,
+  // v4 — optional UPI ID for the "pay via UPI" deep link
+  `ALTER TABLE helper ADD COLUMN upi_id TEXT;`,
 ];
 
 /**
@@ -129,6 +131,7 @@ export function createHelper(input: {
   name: string;
   role?: string;
   phone?: string | null;
+  upi_id?: string | null;
   salary_paise: number;
   salary_type?: Helper['salary_type'];
   weekly_offs?: string;
@@ -140,13 +143,14 @@ export function createHelper(input: {
 }): number {
   const result = conn().runSync(
     `INSERT INTO helper
-       (name, role, phone, salary_paise, salary_type, weekly_offs,
+       (name, role, phone, upi_id, salary_paise, salary_type, weekly_offs,
         paid_leaves_per_month, start_date, end_date, unit_label,
         default_quantity, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     input.name.trim(),
     input.role ?? '',
     input.phone ?? null,
+    input.upi_id ?? null,
     input.salary_paise,
     input.salary_type ?? 'monthly',
     input.weekly_offs ?? '',
@@ -172,6 +176,7 @@ const HELPER_COLUMNS = new Set([
   'name',
   'role',
   'phone',
+  'upi_id',
   'photo_uri',
   'salary_paise',
   'salary_type',
@@ -492,11 +497,11 @@ export function importAllData(payload: BackupPayload): void {
     for (const h of payload.helpers) {
       c.runSync(
         `INSERT INTO helper
-           (id, name, role, phone, photo_uri, salary_paise, salary_type,
+           (id, name, role, phone, upi_id, photo_uri, salary_paise, salary_type,
             weekly_offs, paid_leaves_per_month, start_date, end_date,
             unit_label, default_quantity, is_active, created_at, archived_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        h.id, h.name, h.role, h.phone, h.photo_uri, h.salary_paise,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        h.id, h.name, h.role, h.phone, h.upi_id ?? null, h.photo_uri, h.salary_paise,
         h.salary_type, h.weekly_offs, h.paid_leaves_per_month, h.start_date,
         h.end_date, h.unit_label, h.default_quantity, h.is_active,
         h.created_at, h.archived_at,

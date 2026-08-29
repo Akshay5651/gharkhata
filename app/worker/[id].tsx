@@ -17,15 +17,20 @@ import { archiveHelper, createHelper, getHelper, updateHelper } from '@/lib/db';
 import { canAddHelper } from '@/lib/entitlements';
 import { engagementEndDate } from '@/lib/salary';
 import { formatDateKey, fromDateKey, toDateKey, todayKey } from '@/lib/dates';
-import { formatINR, toPaise, toRupees } from '@/lib/money';
+import { toPaise, toRupees } from '@/lib/money';
 import { SalaryType } from '@/lib/types';
 import { Colors, radius, space, useTheme } from '@/lib/theme';
 import { useI18n } from '@/lib/i18n';
+import FieldLabel from '@/components/FieldLabel';
+import MoneyInput from '@/components/MoneyInput';
 
 type Term = 'ongoing' | 'days' | 'months';
 
 /** Same ladder the day editor offers, so the two screens agree. */
 const QUANTITY_PRESETS = [0.25, 0.5, 0.75, 1, 1.5, 2, 2.5, 3, 4, 5];
+
+/** Common units for what a household pays by delivery rather than by day. */
+const UNIT_PRESETS = ['kg', 'litre', 'piece', 'dozen', 'packet'];
 
 export default function WorkerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -40,6 +45,7 @@ export default function WorkerScreen() {
   const [name, setName] = useState(existing?.name ?? '');
   const [role, setRole] = useState(existing?.role ?? '');
   const [phone, setPhone] = useState(existing?.phone ?? '');
+  const [upiId, setUpiId] = useState(existing?.upi_id ?? '');
   const [salary, setSalary] = useState(
     existing ? String(toRupees(existing.salary_paise)) : '',
   );
@@ -94,17 +100,21 @@ export default function WorkerScreen() {
     if (picked) setStartDate(toDateKey(picked));
   };
 
+  const salaryLabel =
+    salaryType === 'monthly'
+      ? t.monthlySalary
+      : salaryType === 'per_unit'
+        ? t.ratePerUnit
+        : t.dailyWage;
+
   const onSave = () => {
     const rupees = Number(salary);
     if (!name.trim()) {
-      Alert.alert(t.name, t.name);
+      Alert.alert(t.name, t.nameRequiredBody);
       return;
     }
     if (!Number.isFinite(rupees) || rupees <= 0) {
-      Alert.alert(
-        salaryType === 'monthly' ? t.monthlySalary : t.dailyWage,
-        salaryType === 'monthly' ? t.monthlySalary : t.dailyWage,
-      );
+      Alert.alert(salaryLabel, t.amountRequiredBody);
       return;
     }
 
@@ -112,6 +122,7 @@ export default function WorkerScreen() {
       name: name.trim(),
       role: role.trim(),
       phone: phone.trim() || null,
+      upi_id: upiId.trim() || null,
       salary_paise: toPaise(rupees),
       salary_type: salaryType,
       start_date: startDate,
@@ -160,7 +171,7 @@ export default function WorkerScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-        <Text style={styles.label}>{t.name}</Text>
+        <FieldLabel text={t.name} required help={t.helpName} />
         <TextInput
           style={styles.input}
           placeholder={t.name}
@@ -169,7 +180,7 @@ export default function WorkerScreen() {
           onChangeText={setName}
         />
 
-        <Text style={styles.label}>{t.work}</Text>
+        <FieldLabel text={t.work} help={t.helpWork} />
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -200,16 +211,28 @@ export default function WorkerScreen() {
           onChangeText={setRole}
         />
 
-        <Text style={styles.label}>{t.phone}</Text>
+        <FieldLabel text={t.phone} help={t.helpPhone} />
         <TextInput
           style={styles.input}
           placeholder={t.phoneHint}
           placeholderTextColor={colors.muted}
-          keyboardType="phone-pad"
+          keyboardType="number-pad"
+          maxLength={10}
           value={phone}
-          onChangeText={setPhone}
+          onChangeText={(text) => setPhone(text.replace(/\D/g, '').slice(0, 10))}
         />
 
+        <FieldLabel text={t.upiIdLabel} help={t.helpUpi} />
+        <TextInput
+          style={styles.input}
+          placeholder={t.upiIdHint}
+          placeholderTextColor={colors.muted}
+          autoCapitalize="none"
+          value={upiId}
+          onChangeText={setUpiId}
+        />
+
+        <FieldLabel text={t.payType} required help={t.helpPayType} />
         <View style={styles.segment}>
           {(
             [
@@ -240,35 +263,37 @@ export default function WorkerScreen() {
 
         {salaryType === 'per_unit' && (
           <>
-            <Text style={styles.label}>{t.unit}</Text>
-            <TextInput
-              style={styles.input}
-              placeholder={t.unitHint}
-              placeholderTextColor={colors.muted}
-              value={unitLabel}
-              onChangeText={setUnitLabel}
-            />
+            <FieldLabel text={t.unit} required help={t.helpUnit} />
+            <View style={styles.segment}>
+              {UNIT_PRESETS.map((option) => (
+                <Pressable
+                  key={option}
+                  onPress={() => setUnitLabel(option)}
+                  style={[
+                    styles.segmentItem,
+                    unitLabel === option && styles.segmentItemActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.segmentText,
+                      unitLabel === option && styles.segmentTextActive,
+                    ]}
+                  >
+                    {option}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
           </>
         )}
 
-        <TextInput
-          style={styles.input}
-          placeholder={
-            salaryType === 'monthly'
-              ? t.monthlySalary
-              : salaryType === 'per_unit'
-                ? t.ratePerUnit
-                : t.dailyWage
-          }
-          placeholderTextColor={colors.muted}
-          keyboardType="decimal-pad"
-          value={salary}
-          onChangeText={setSalary}
-        />
+        <FieldLabel text={salaryLabel} required help={t.helpAmount(salaryType)} />
+        <MoneyInput value={salary} onChangeText={setSalary} placeholder={salaryLabel} />
 
         {salaryType === 'per_unit' && (
           <>
-            <Text style={styles.label}>{t.usualQty}</Text>
+            <FieldLabel text={t.usualQty} help={t.helpUsualQty} />
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -302,7 +327,7 @@ export default function WorkerScreen() {
           </>
         )}
 
-        <Text style={styles.label}>{t.hiredOn}</Text>
+        <FieldLabel text={t.hiredOn} required help={t.helpHiredOn} />
         <Pressable style={styles.input} onPress={() => setShowPicker(true)}>
           <Text style={styles.dateText}>{formatDateKey(startDate)}</Text>
         </Pressable>
@@ -315,7 +340,7 @@ export default function WorkerScreen() {
           />
         )}
 
-        <Text style={styles.label}>{t.howLong}</Text>
+        <FieldLabel text={t.howLong} help={t.helpHowLong} />
         <View style={styles.segment}>
           {(
             [
@@ -351,7 +376,11 @@ export default function WorkerScreen() {
           <>
             <TextInput
               style={styles.input}
-              placeholder={t.numberOf(term === 'days' ? t.forDays : t.forMonths)}
+              placeholder={
+                term === 'days'
+                  ? t.daysHiredHint(role.trim() || t.worker)
+                  : t.monthsHiredHint
+              }
               placeholderTextColor={colors.muted}
               keyboardType="number-pad"
               value={termAmount}
@@ -390,14 +419,6 @@ const makeStyles = (colors: Colors) =>
     },
     title: { flex: 1, fontSize: 22, fontWeight: '700', color: colors.text },
     body: { padding: space.lg, gap: space.sm, paddingBottom: space.xl },
-    label: {
-      fontSize: 12,
-      fontWeight: '600',
-      color: colors.muted,
-      marginTop: space.sm,
-      textTransform: 'uppercase',
-      letterSpacing: 0.4,
-    },
     input: {
       borderWidth: 1,
       borderColor: colors.border,
@@ -412,14 +433,15 @@ const makeStyles = (colors: Colors) =>
     dateText: { fontSize: 15, color: colors.text },
     segment: {
       flexDirection: 'row',
+      flexWrap: 'wrap',
       gap: space.xs,
       backgroundColor: colors.surfaceAlt,
       borderRadius: radius.md,
       padding: 3,
-      marginTop: space.sm,
     },
     segmentItem: {
-      flex: 1,
+      flexGrow: 1,
+      minWidth: '30%',
       paddingVertical: space.sm,
       borderRadius: radius.sm,
       alignItems: 'center',

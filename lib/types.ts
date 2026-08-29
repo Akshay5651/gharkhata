@@ -26,6 +26,8 @@ export interface Helper {
   name: string;
   role: string;
   phone: string | null;
+  /** UPI VPA (name@bank), for the "pay via UPI" deep link. Optional. */
+  upi_id: string | null;
   photo_uri: string | null;
   salary_paise: number;
   salary_type: SalaryType;

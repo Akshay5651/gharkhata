@@ -7,6 +7,7 @@ import {
   useState,
 } from 'react';
 import { getSetting, setSetting } from './db';
+import { SalaryType } from './types';
 
 export type Lang = 'en' | 'hi';
 
@@ -184,6 +185,37 @@ const en = {
   cash: 'Cash',
   upi: 'UPI',
   bank: 'Bank',
+
+  nameRequiredBody: 'Enter a name before saving.',
+  amountRequiredBody: 'Enter an amount greater than zero.',
+  payType: 'Pay type',
+  upiIdLabel: 'UPI ID',
+  upiIdHint: 'name@bank — optional',
+  daysHiredHint: (role: string) => `Number of days ${role} is hired`,
+  monthsHiredHint: 'Total months hired',
+
+  helpName: 'The worker’s name, shown throughout the app and on payslips.',
+  helpWork: 'What they do — helps you tell workers apart at a glance.',
+  helpPhone: 'Used to open WhatsApp directly with their payslip. 10 digits, optional.',
+  helpUpi: 'Their UPI ID (VPA), used only for the "Pay via UPI" shortcut when recording a payment. Optional.',
+  helpPayType: 'Fixed monthly wage, a daily wage, or a rate per unit like per litre of milk.',
+  helpUnit: 'The unit they’re paid by — kg, litre, piece, and so on.',
+  helpAmount: (type: SalaryType): string =>
+    type === 'monthly'
+      ? 'The full amount paid each month if they work every day.'
+      : type === 'per_unit'
+        ? 'The rate paid for one unit — for example ₹40 per litre.'
+        : 'The amount paid for one full day of work.',
+  helpUsualQty: 'The amount they usually deliver each day. Pre-fills on Home so marking a normal day is one tap.',
+  helpHiredOn: 'The date they started. Attendance and salary only count from this date onward.',
+  helpHowLong: 'Ongoing if there’s no fixed end date, or set a duration for a fixed-term job.',
+
+  notStarted: 'Not started',
+  payingNow: 'Paying now',
+  payViaUpi: 'Pay via UPI',
+  noUpiTitle: 'No UPI ID saved',
+  noUpiBody: 'Add this worker’s UPI ID from Edit worker to use this shortcut.',
+  noUpiAppBody: 'No UPI app found on this phone to handle the payment.',
 };
 
 type Dict = typeof en;
@@ -357,6 +389,37 @@ const hi: Dict = {
   cash: 'नकद',
   upi: 'यूपीआई',
   bank: 'बैंक',
+
+  nameRequiredBody: 'सेव करने से पहले नाम लिखें।',
+  amountRequiredBody: 'शून्य से बड़ी रकम डालें।',
+  payType: 'भुगतान का तरीका',
+  upiIdLabel: 'यूपीआई आईडी',
+  upiIdHint: 'name@bank — ज़रूरी नहीं',
+  daysHiredHint: (role: string) => `${role} कितने दिन के लिए रखा है`,
+  monthsHiredHint: 'कुल कितने महीने के लिए',
+
+  helpName: 'कामगार का नाम — ऐप और पर्ची पर हर जगह दिखेगा।',
+  helpWork: 'यह क्या काम करते हैं — एक नज़र में पहचानने में मदद करता है।',
+  helpPhone: 'व्हाट्सएप पर सीधे पर्ची भेजने के लिए। 10 अंक, ज़रूरी नहीं।',
+  helpUpi: 'भुगतान दर्ज करते समय "यूपीआई से भुगतान करें" के लिए इनका यूपीआई आईडी। ज़रूरी नहीं।',
+  helpPayType: 'महीने की तय तनख्वाह, दिन की मज़दूरी, या दूध जैसा प्रति यूनिट रेट।',
+  helpUnit: 'यह जिस यूनिट में भुगतान पाते हैं — किलो, लीटर, नग वगैरह।',
+  helpAmount: (type: SalaryType) =>
+    type === 'monthly'
+      ? 'हर महीने पूरा काम करने पर मिलने वाली पूरी रकम।'
+      : type === 'per_unit'
+        ? 'एक यूनिट का रेट — जैसे ₹40 प्रति लीटर।'
+        : 'एक पूरे दिन के काम की रकम।',
+  helpUsualQty: 'रोज़ जितना देते हैं। होम स्क्रीन पर पहले से भरा रहेगा, आम दिन एक टैप में लगेगा।',
+  helpHiredOn: 'जिस दिन से शुरू किया। हाज़िरी और तनख्वाह इसी दिन से गिनी जाएगी।',
+  helpHowLong: 'कोई तय तारीख नहीं तो लगातार चुनें, वरना समय सीमा तय करें।',
+
+  notStarted: 'अभी शुरू नहीं हुआ',
+  payingNow: 'अभी कितना दे रहे हैं',
+  payViaUpi: 'यूपीआई से भुगतान करें',
+  noUpiTitle: 'यूपीआई आईडी नहीं है',
+  noUpiBody: 'यह शॉर्टकट इस्तेमाल करने के लिए Edit worker से यूपीआई आईडी जोड़ें।',
+  noUpiAppBody: 'इस फ़ोन पर भुगतान के लिए कोई यूपीआई ऐप नहीं मिला।',
 };
 
 const DICTS: Record<Lang, Dict> = { en, hi };
