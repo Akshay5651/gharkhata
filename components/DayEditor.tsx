@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -88,9 +90,13 @@ export default function DayEditor({
       onRequestClose={onClose}
     >
       <Pressable style={styles.backdrop} onPress={onClose}>
-        {/* Stops a tap inside the sheet from closing it via the backdrop. */}
-        <Pressable style={styles.sheet} onPress={() => {}}>
-          <View style={styles.grabber} />
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.kav}
+        >
+          {/* Stops a tap inside the sheet from closing it via the backdrop. */}
+          <Pressable style={styles.sheet} onPress={() => {}}>
+            <View style={styles.grabber} />
 
           <Text style={styles.date}>{formatDateKey(dateKey)}</Text>
           <Text style={styles.who}>{helper.name}</Text>
@@ -185,7 +191,8 @@ export default function DayEditor({
               <Text style={styles.btnText}>{t.save}</Text>
             </Pressable>
           </View>
-        </Pressable>
+          </Pressable>
+        </KeyboardAvoidingView>
       </Pressable>
     </Modal>
   );
@@ -198,6 +205,7 @@ const makeStyles = (colors: Colors) =>
       backgroundColor: 'rgba(0,0,0,0.5)',
       justifyContent: 'flex-end',
     },
+    kav: { width: '100%' },
     sheet: {
       backgroundColor: colors.bg,
       borderTopLeftRadius: radius.lg * 1.5,

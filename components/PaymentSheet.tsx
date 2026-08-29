@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  Alert,
+  KeyboardAvoidingView,
+  Linking,
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Helper, Payment } from '@/lib/types';
 import { formatINR, toPaise, toRupees } from '@/lib/money';
 import { Colors, radius, space, useTheme } from '@/lib/theme';
@@ -33,6 +38,8 @@ export default function PaymentSheet({
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [amount, setAmount] = useState('');
+  // 'bank' stays a valid stored value (old records may have it) but is no
+  // longer offered here — cash and UPI cover what households actually use.
   const [method, setMethod] = useState<Payment['method']>('cash');
   const [note, setNote] = useState('');
 
@@ -50,7 +57,6 @@ export default function PaymentSheet({
   const methods: { value: Payment['method']; label: string }[] = [
     { value: 'cash', label: t.cash },
     { value: 'upi', label: t.upi },
-    { value: 'bank', label: t.bank },
   ];
 
   const rupees = Number(amount);
@@ -61,6 +67,37 @@ export default function PaymentSheet({
     onSave(toPaise(rupees), method, note.trim() || null);
   };
 
+  /**
+   * Opens the user's own UPI app pre-filled with the payee and amount — it
+   * does not move any money itself, the person still has to complete it in
+   * their own app. `upi://pay` is the generic intent every UPI app (GPay,
+   * PhonePe, Paytm...) registers for, so Android offers a real chooser
+   * rather than us picking one app on the user's behalf.
+   */
+  const onPayViaUpi = async () => {
+    if (!helper.upi_id) {
+      Alert.alert(t.noUpiTitle, t.noUpiBody);
+      return;
+    }
+    const params = [
+      `pa=${encodeURIComponent(helper.upi_id)}`,
+      `pn=${encodeURIComponent(helper.name)}`,
+      valid ? `am=${rupees.toFixed(2)}` : null,
+      'cu=INR',
+      `tn=${encodeURIComponent(note.trim() || 'Salary payment')}`,
+    ]
+      .filter(Boolean)
+      .join('&');
+    const url = `upi://pay?${params}`;
+
+    const canOpen = await Linking.canOpenURL(url);
+    if (!canOpen) {
+      Alert.alert(t.noUpiTitle, t.noUpiAppBody);
+      return;
+    }
+    await Linking.openURL(url);
+  };
+
   return (
     <Modal
       visible={visible}
@@ -69,69 +106,81 @@ export default function PaymentSheet({
       onRequestClose={onClose}
     >
       <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={styles.sheet} onPress={() => {}}>
-          <View style={styles.grabber} />
-          <Text style={styles.title}>{t.recordPayment}</Text>
-          <Text style={styles.who}>{helper.name}</Text>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.kav}
+        >
+          <Pressable style={styles.sheet} onPress={() => {}}>
+            <View style={styles.grabber} />
+            <Text style={styles.title}>{t.recordPayment}</Text>
+            <Text style={styles.who}>{helper.name}</Text>
 
-          <View style={styles.context}>
-            <Text style={styles.contextLabel}>{t.balanceDue}</Text>
-            <Text style={styles.contextValue}>{formatINR(balancePaise)}</Text>
-          </View>
+            <View style={styles.context}>
+              <Text style={styles.contextLabel}>{t.balanceDue}</Text>
+              <Text style={styles.contextValue}>{formatINR(balancePaise)}</Text>
+            </View>
 
-          <Text style={styles.label}>{t.amount}</Text>
-          <TextInput
-            style={styles.input}
-            keyboardType="decimal-pad"
-            placeholder="0"
-            placeholderTextColor={colors.muted}
-            value={amount}
-            onChangeText={setAmount}
-            selectTextOnFocus
-          />
+            <Text style={styles.label}>{t.payingNow}</Text>
+            <TextInput
+              style={styles.input}
+              keyboardType="decimal-pad"
+              placeholder="0"
+              placeholderTextColor={colors.muted}
+              value={amount}
+              onChangeText={setAmount}
+              selectTextOnFocus
+            />
 
-          <Text style={styles.label}>{t.method}</Text>
-          <View style={styles.options}>
-            {methods.map((option) => {
-              const active = method === option.value;
-              return (
-                <Pressable
-                  key={option.value}
-                  onPress={() => setMethod(option.value)}
-                  style={[styles.option, active && styles.optionActive]}
-                >
-                  <Text
-                    style={[styles.optionText, active && styles.optionTextActive]}
+            <Text style={styles.label}>{t.method}</Text>
+            <View style={styles.options}>
+              {methods.map((option) => {
+                const active = method === option.value;
+                return (
+                  <Pressable
+                    key={option.value}
+                    onPress={() => setMethod(option.value)}
+                    style={[styles.option, active && styles.optionActive]}
                   >
-                    {option.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+                    <Text
+                      style={[styles.optionText, active && styles.optionTextActive]}
+                    >
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
 
-          <Text style={styles.label}>{t.noteOptional}</Text>
-          <TextInput
-            style={styles.input}
-            placeholder={t.noteOptional}
-            placeholderTextColor={colors.muted}
-            value={note}
-            onChangeText={setNote}
-          />
+            {method === 'upi' && (
+              <Pressable style={styles.upiBtn} onPress={onPayViaUpi}>
+                <Ionicons name="phone-portrait-outline" size={16} color={colors.primary} />
+                <Text style={styles.upiBtnText}>{t.payViaUpi}</Text>
+              </Pressable>
+            )}
 
-          <View style={styles.actions}>
-            <Pressable style={[styles.btn, styles.btnGhost]} onPress={onClose}>
-              <Text style={styles.btnGhostText}>{t.cancel}</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.btn, !valid && styles.btnDisabled]}
-              onPress={commit}
-              disabled={!valid}
-            >
-              <Text style={styles.btnText}>{t.save}</Text>
-            </Pressable>
-          </View>
-        </Pressable>
+            <Text style={styles.label}>{t.noteOptional}</Text>
+            <TextInput
+              style={styles.input}
+              placeholder={t.noteOptional}
+              placeholderTextColor={colors.muted}
+              value={note}
+              onChangeText={setNote}
+            />
+
+            <View style={styles.actions}>
+              <Pressable style={[styles.btn, styles.btnGhost]} onPress={onClose}>
+                <Text style={styles.btnGhostText}>{t.cancel}</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.btn, !valid && styles.btnDisabled]}
+                onPress={commit}
+                disabled={!valid}
+              >
+                <Text style={styles.btnText}>{t.save}</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </KeyboardAvoidingView>
       </Pressable>
     </Modal>
   );
@@ -144,6 +193,7 @@ const makeStyles = (colors: Colors) =>
       backgroundColor: 'rgba(0,0,0,0.5)',
       justifyContent: 'flex-end',
     },
+    kav: { width: '100%' },
     sheet: {
       backgroundColor: colors.bg,
       borderTopLeftRadius: radius.lg * 1.5,
@@ -207,6 +257,18 @@ const makeStyles = (colors: Colors) =>
     optionActive: { backgroundColor: colors.primary, borderColor: colors.primary },
     optionText: { fontSize: 13, fontWeight: '600', color: colors.muted },
     optionTextActive: { color: colors.onPrimary },
+    upiBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: space.xs,
+      marginTop: space.sm,
+      paddingVertical: space.sm,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.primary,
+    },
+    upiBtnText: { color: colors.primary, fontWeight: '600', fontSize: 13 },
     actions: { flexDirection: 'row', gap: space.sm, marginTop: space.xl },
     btn: {
       flex: 1,

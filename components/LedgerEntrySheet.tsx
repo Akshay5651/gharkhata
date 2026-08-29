@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -62,44 +64,52 @@ export default function LedgerEntrySheet({
       onRequestClose={onClose}
     >
       <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={styles.sheet} onPress={() => {}}>
-          <View style={styles.grabber} />
-          <Text style={styles.title}>{t.addAdvance}</Text>
-          <Text style={styles.who}>{helper.name}</Text>
+        {/* React Native's Modal renders in its own native window, so it does
+            not get the Activity-level keyboard resize Android normally gives
+            a screen — without this the sheet sits under the keyboard. */}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.kav}
+        >
+          <Pressable style={styles.sheet} onPress={() => {}}>
+            <View style={styles.grabber} />
+            <Text style={styles.title}>{t.addAdvance}</Text>
+            <Text style={styles.who}>{helper.name}</Text>
 
-          <Text style={styles.label}>{t.amount}</Text>
-          <TextInput
-            style={styles.input}
-            keyboardType="decimal-pad"
-            placeholder="0"
-            placeholderTextColor={colors.muted}
-            value={amount}
-            onChangeText={setAmount}
-            autoFocus
-          />
+            <Text style={styles.label}>{t.amount}</Text>
+            <TextInput
+              style={styles.input}
+              keyboardType="decimal-pad"
+              placeholder="0"
+              placeholderTextColor={colors.muted}
+              value={amount}
+              onChangeText={setAmount}
+              autoFocus
+            />
 
-          <Text style={styles.label}>{t.noteOptional}</Text>
-          <TextInput
-            style={styles.input}
-            placeholder={t.noteOptional}
-            placeholderTextColor={colors.muted}
-            value={note}
-            onChangeText={setNote}
-          />
+            <Text style={styles.label}>{t.noteOptional}</Text>
+            <TextInput
+              style={styles.input}
+              placeholder={t.noteOptional}
+              placeholderTextColor={colors.muted}
+              value={note}
+              onChangeText={setNote}
+            />
 
-          <View style={styles.actions}>
-            <Pressable style={[styles.btn, styles.btnGhost]} onPress={onClose}>
-              <Text style={styles.btnGhostText}>{t.cancel}</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.btn, !valid && styles.btnDisabled]}
-              onPress={commit}
-              disabled={!valid}
-            >
-              <Text style={styles.btnText}>{t.save}</Text>
-            </Pressable>
-          </View>
-        </Pressable>
+            <View style={styles.actions}>
+              <Pressable style={[styles.btn, styles.btnGhost]} onPress={onClose}>
+                <Text style={styles.btnGhostText}>{t.cancel}</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.btn, !valid && styles.btnDisabled]}
+                onPress={commit}
+                disabled={!valid}
+              >
+                <Text style={styles.btnText}>{t.save}</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </KeyboardAvoidingView>
       </Pressable>
     </Modal>
   );
@@ -112,6 +122,7 @@ const makeStyles = (colors: Colors) =>
       backgroundColor: 'rgba(0,0,0,0.5)',
       justifyContent: 'flex-end',
     },
+    kav: { width: '100%' },
     sheet: {
       backgroundColor: colors.bg,
       borderTopLeftRadius: radius.lg * 1.5,
