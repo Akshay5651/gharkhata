@@ -210,7 +210,13 @@ export default function SalaryScreen() {
                     ? formatINR(balance.balancePaise)
                     : balance.balancePaise < 0
                       ? `${t.paidExtra} ${formatINR(-balance.balancePaise)}`
-                      : t.allSettled}
+                      : // Zero reads two different ways: a brand-new worker with
+                        // no attendance and no payments yet has nothing to settle,
+                        // which is not the same claim as "paid off" — that only
+                        // means something once there was actually a due to clear.
+                        balance.totalDuePaise === 0 && balance.totalPaidPaise === 0
+                        ? t.notStarted
+                        : t.allSettled}
                 </Text>
               </Pressable>
               <View style={styles.balanceActions}>
