@@ -17,10 +17,13 @@ const ADAPTIVE_OUT = path.join(
 // illegible. Pixel coordinates in the 1254x1254 source.
 const MARK_BOX = { left: 90, top: 90, width: 1080, height: 735 };
 
-// The adaptive-icon safe zone is roughly the center 66% of the canvas —
-// launchers mask everything outside a circle/squircle/rounded-square of
-// that size. Padding the mark to ~55% of canvas width keeps real margin.
-const CANVAS = 1600;
+// Canvas sized off the WIDER axis (the mark is landscape-shaped) so left/
+// right margin is real and visible — padding to a canvas sized off a square
+// safe-zone percentage gave ~16% side margin but ~27% top/bottom, which read
+// as "no side margin at all" next to the generous vertical gap. Sizing off
+// width directly makes the mark itself larger too (less empty canvas overall).
+const SIDE_MARGIN_FRACTION = 0.09;
+const CANVAS = Math.round(MARK_BOX.width / (1 - 2 * SIDE_MARGIN_FRACTION));
 
 async function run() {
   // Full source logo, used as-is for the general/iOS/store icon — that
