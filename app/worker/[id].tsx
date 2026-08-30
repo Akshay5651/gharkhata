@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -11,12 +12,14 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { archiveHelper, createHelper, getHelper, updateHelper } from '@/lib/db';
 import { canAddHelper } from '@/lib/entitlements';
 import { engagementEndDate } from '@/lib/salary';
 import { formatDateKey, fromDateKey, toDateKey, todayKey } from '@/lib/dates';
 import { toPaise, toRupees } from '@/lib/money';
+import { savePhoto } from '@/lib/photos';
 import { SalaryType } from '@/lib/types';
 import { Colors, radius, space, useTheme } from '@/lib/theme';
 import { useI18n } from '@/lib/i18n';
@@ -52,6 +55,7 @@ export default function WorkerScreen() {
   const isNew = id === 'new';
   const existing = useMemo(() => (isNew ? null : getHelper(Number(id))), [id, isNew]);
 
+  const [photo, setPhoto] = useState<string | null>(existing?.photo_uri ?? null);
   const [name, setName] = useState(existing?.name ?? '');
   const [role, setRole] = useState(existing?.role ?? '');
   const [phone, setPhone] = useState(existing?.phone ?? '');
@@ -116,6 +120,22 @@ export default function WorkerScreen() {
     if (preset.unit && !unitLabel) setUnitLabel(preset.unit);
   };
 
+  const onPickPhoto = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      showAppAlert(t.addPhoto, t.photoPermissionBody, [{ text: t.ok }]);
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.6,
+    });
+    if (result.canceled || !result.assets?.[0]) return;
+    setPhoto(savePhoto(result.assets[0].uri));
+  };
+
   const onPickDate = (_: unknown, picked?: Date) => {
     setShowPicker(Platform.OS === 'ios');
     if (picked) setStartDate(toDateKey(picked));
@@ -141,6 +161,7 @@ export default function WorkerScreen() {
 
     const payload = {
       name: name.trim(),
+      photo_uri: photo,
       role: role.trim(),
       phone: phone.trim() || null,
       upi_id: upiId.trim() || null,
@@ -196,6 +217,17 @@ export default function WorkerScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+        <Pressable style={styles.avatarWrap} onPress={onPickPhoto}>
+          {photo ? (
+            <Image source={{ uri: photo }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatar, styles.avatarPlaceholder]}>
+              <Ionicons name="camera-outline" size={26} color={colors.muted} />
+            </View>
+          )}
+          <Text style={styles.avatarHint}>{photo ? t.changePhoto : t.addPhoto}</Text>
+        </Pressable>
+
         <FieldLabel text={t.name} required help={t.helpName} />
         <TextInput
           style={styles.input}
@@ -464,6 +496,20 @@ const makeStyles = (colors: Colors) =>
     },
     title: { flex: 1, fontSize: 22, fontWeight: '700', color: colors.text },
     body: { padding: space.lg, gap: space.sm, paddingBottom: space.xl },
+    avatarWrap: { alignItems: 'center', gap: space.xs, marginBottom: space.sm },
+    avatar: {
+      width: 84,
+      height: 84,
+      borderRadius: 42,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    avatarPlaceholder: {
+      backgroundColor: colors.surfaceAlt,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    avatarHint: { fontSize: 12, fontWeight: '600', color: colors.primary },
     input: {
       borderWidth: 1,
       borderColor: colors.border,

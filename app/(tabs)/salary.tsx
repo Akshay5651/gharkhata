@@ -36,6 +36,7 @@ import { formatINR } from '@/lib/money';
 import { Helper, Payment } from '@/lib/types';
 import { Colors, radius, space, useTheme } from '@/lib/theme';
 import { useI18n } from '@/lib/i18n';
+import ProfileButton from '@/components/ProfileButton';
 import { showAppAlert } from '@/components/AppAlertHost';
 import LedgerEntrySheet from '@/components/LedgerEntrySheet';
 import PaymentSheet from '@/components/PaymentSheet';
@@ -190,7 +191,10 @@ export default function SalaryScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>{t.salary}</Text>
+        <View style={styles.titleRow}>
+          <ProfileButton />
+          <Text style={styles.title}>{t.salary}</Text>
+        </View>
         <View style={styles.periodRow}>
           <Pressable onPress={() => changePeriod(-1)} hitSlop={8}>
             <Text style={[styles.arrow, !canGoBack && styles.arrowLocked]}>‹</Text>
@@ -385,6 +389,7 @@ const makeStyles = (colors: Colors) =>
   StyleSheet.create({
     safe: { flex: 1, backgroundColor: colors.bg },
     header: { paddingHorizontal: space.lg, paddingTop: space.md },
+    titleRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
     title: { fontSize: 28, fontWeight: '700', color: colors.text },
     periodRow: {
       flexDirection: 'row',

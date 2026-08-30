@@ -132,6 +132,7 @@ export function createHelper(input: {
   role?: string;
   phone?: string | null;
   upi_id?: string | null;
+  photo_uri?: string | null;
   salary_paise: number;
   salary_type?: Helper['salary_type'];
   weekly_offs?: string;
@@ -143,14 +144,15 @@ export function createHelper(input: {
 }): number {
   const result = conn().runSync(
     `INSERT INTO helper
-       (name, role, phone, upi_id, salary_paise, salary_type, weekly_offs,
+       (name, role, phone, upi_id, photo_uri, salary_paise, salary_type, weekly_offs,
         paid_leaves_per_month, start_date, end_date, unit_label,
         default_quantity, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     input.name.trim(),
     input.role ?? '',
     input.phone ?? null,
     input.upi_id ?? null,
+    input.photo_uri ?? null,
     input.salary_paise,
     input.salary_type ?? 'monthly',
     input.weekly_offs ?? '',

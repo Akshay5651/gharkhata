@@ -229,6 +229,14 @@ const en = {
   backupLimitTitle: 'Free limit reached',
   backupLimitBody: 'The free plan allows 2 backup actions a month. Upgrade for unlimited backups.',
   backupUsageHint: (used: number, limit: number) => `${used} of ${limit} used this month`,
+
+  yourProfile: 'Your profile',
+  yourProfileHint: 'Your own details — not a worker\'s. Stays on this phone, shows on payslips if filled in.',
+  emailLabel: 'Email',
+  emailHint: 'Optional',
+  addPhoto: 'Add photo',
+  changePhoto: 'Change photo',
+  photoPermissionBody: 'GharKhata needs access to your photos to set a picture.',
 };
 
 type Dict = typeof en;
@@ -446,6 +454,14 @@ const hi: Dict = {
   backupLimitTitle: 'मुफ़्त सीमा पूरी',
   backupLimitBody: 'मुफ़्त प्लान में महीने में 2 बैकअप एक्शन मिलते हैं। बिना सीमा के लिए अपग्रेड करें।',
   backupUsageHint: (used: number, limit: number) => `${limit} में से ${used} इस्तेमाल`,
+
+  yourProfile: 'आपकी प्रोफ़ाइल',
+  yourProfileHint: 'यह आपकी अपनी जानकारी है, किसी कामगार की नहीं। यह सिर्फ़ इस फ़ोन पर रहती है, और भरने पर सैलरी पर्ची में दिखती है।',
+  emailLabel: 'ईमेल',
+  emailHint: 'ज़रूरी नहीं',
+  addPhoto: 'फ़ोटो जोड़ें',
+  changePhoto: 'फ़ोटो बदलें',
+  photoPermissionBody: 'फ़ोटो लगाने के लिए GharKhata को आपकी फ़ोटो तक पहुँच चाहिए।',
 };
 
 const DICTS: Record<Lang, Dict> = { en, hi };

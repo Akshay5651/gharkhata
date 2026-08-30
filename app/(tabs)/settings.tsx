@@ -31,6 +31,7 @@ import {
 import { Colors, radius, space, ThemeMode, useTheme } from '@/lib/theme';
 import { Lang, LANG_NAMES, useI18n } from '@/lib/i18n';
 import { showAppAlert } from '@/components/AppAlertHost';
+import ProfileButton from '@/components/ProfileButton';
 
 const FEEDBACK_EMAIL = 'akki221099@gmail.com';
 
@@ -197,7 +198,10 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>{t.settings}</Text>
+        <View style={styles.titleRow}>
+          <ProfileButton />
+          <Text style={styles.title}>{t.settings}</Text>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.body}>
@@ -365,6 +369,7 @@ const makeStyles = (colors: Colors) =>
   StyleSheet.create({
     safe: { flex: 1, backgroundColor: colors.bg },
     header: { paddingHorizontal: space.lg, paddingTop: space.md },
+    titleRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
     title: { fontSize: 28, fontWeight: '700', color: colors.text },
     body: { padding: space.lg },
     label: {

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -25,6 +26,7 @@ import { AttendanceStatus, Helper } from '@/lib/types';
 import { Colors, radius, space, useTheme } from '@/lib/theme';
 import { useI18n } from '@/lib/i18n';
 import GuideSheet from '@/components/GuideSheet';
+import ProfileButton from '@/components/ProfileButton';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -114,6 +116,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
+        <ProfileButton />
         <View style={styles.headerText}>
           <Text style={styles.title}>{t.workers}</Text>
           <Text style={styles.subtitle}>
@@ -164,6 +167,15 @@ export default function HomeScreen() {
                   })
                 }
               >
+                <View style={styles.avatar}>
+                  {helper.photo_uri ? (
+                    <Image source={{ uri: helper.photo_uri }} style={styles.avatarImg} />
+                  ) : (
+                    <Text style={styles.avatarInitial}>
+                      {helper.name.trim().charAt(0).toUpperCase()}
+                    </Text>
+                  )}
+                </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.name}>{helper.name}</Text>
                   <Text style={styles.role}>
@@ -269,6 +281,7 @@ const makeStyles = (colors: Colors) =>
     header: {
       flexDirection: 'row',
       alignItems: 'flex-start',
+      gap: space.sm,
       paddingHorizontal: space.lg,
       paddingTop: space.md,
     },
@@ -302,6 +315,19 @@ const makeStyles = (colors: Colors) =>
       gap: space.md,
     },
     cardHead: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+    avatar: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: colors.surfaceAlt,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
+    },
+    avatarImg: { width: '100%', height: '100%' },
+    avatarInitial: { fontSize: 16, fontWeight: '700', color: colors.primary },
     name: { fontSize: 17, fontWeight: '600', color: colors.text },
     role: { fontSize: 13, color: colors.muted, marginTop: 2 },
     row: { flexDirection: 'row', gap: space.sm },
