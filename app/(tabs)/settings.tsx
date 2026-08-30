@@ -12,7 +12,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { FREE_HELPER_LIMIT, FREE_HISTORY_MONTHS, isPremium } from '@/lib/entitlements';
+import {
+  backupActionsUsed,
+  canUseBackupAction,
+  FREE_BACKUP_ACTIONS_PER_MONTH,
+  FREE_HELPER_LIMIT,
+  FREE_HISTORY_MONTHS,
+  isPremium,
+  recordBackupActionUsed,
+} from '@/lib/entitlements';
 import { exportBackupFile, importBackupFile } from '@/lib/backup';
 import {
   disableExportReminder,
@@ -24,12 +32,7 @@ import { Colors, radius, space, ThemeMode, useTheme } from '@/lib/theme';
 import { Lang, LANG_NAMES, useI18n } from '@/lib/i18n';
 import { showAppAlert } from '@/components/AppAlertHost';
 
-/**
- * TODO before publishing: replace with the support address you want feedback
- * sent to. Deliberately not your personal Gmail — this string ends up in a
- * public APK and anyone can read it out of the bundle.
- */
-const FEEDBACK_EMAIL = 'feedback@example.com';
+const FEEDBACK_EMAIL = 'akki221099@gmail.com';
 
 /**
  * What upgrading actually buys. Kept next to the paywall copy so the promise
@@ -77,6 +80,9 @@ export default function SettingsScreen() {
   const [feedback, setFeedback] = useState('');
   const [busy, setBusy] = useState<'export' | 'import' | null>(null);
   const [reminderOn, setReminderOn] = useState(isExportReminderEnabled());
+  // No dedicated state for backup usage — it's read fresh from SQLite on
+  // every render; this just forces one after a successful export/restore.
+  const [, forceRerender] = useState(0);
 
   // First-ever visit to Settings turns the reminder on by default and asks
   // for notification permission here, where a screen about data and backups
@@ -127,9 +133,18 @@ export default function SettingsScreen() {
   };
 
   const onExport = async () => {
+    if (!canUseBackupAction()) {
+      showAppAlert(t.backupLimitTitle, t.backupLimitBody, [
+        { text: t.cancel, style: 'cancel' },
+        { text: t.upgrade, onPress: onUpgrade },
+      ]);
+      return;
+    }
     setBusy('export');
     try {
       await exportBackupFile();
+      recordBackupActionUsed();
+      forceRerender((n) => n + 1);
     } catch (e) {
       showAppAlert('!', e instanceof Error ? e.message : String(e), [
         { text: t.ok },
@@ -140,6 +155,13 @@ export default function SettingsScreen() {
   };
 
   const onImport = () => {
+    if (!canUseBackupAction()) {
+      showAppAlert(t.backupLimitTitle, t.backupLimitBody, [
+        { text: t.cancel, style: 'cancel' },
+        { text: t.upgrade, onPress: onUpgrade },
+      ]);
+      return;
+    }
     showAppAlert(t.restoreWarnTitle, t.restoreWarnBody, [
       { text: t.cancel, style: 'cancel' },
       {
@@ -150,6 +172,8 @@ export default function SettingsScreen() {
           try {
             const outcome = await importBackupFile();
             if (outcome.status === 'restored') {
+              recordBackupActionUsed();
+              forceRerender((n) => n + 1);
               showAppAlert(t.restoreDoneTitle, t.restoreDoneBody, [{ text: t.ok }]);
             } else if (outcome.status === 'invalid') {
               showAppAlert(t.restoreBadTitle, t.restoreBadBody, [{ text: t.ok }]);
@@ -164,6 +188,10 @@ export default function SettingsScreen() {
         },
       },
     ]);
+  };
+
+  const onBackupHelp = () => {
+    showAppAlert(t.backupGuideTitle, t.backupGuideBody, [{ text: t.guideDone }]);
   };
 
   return (
@@ -224,8 +252,18 @@ export default function SettingsScreen() {
           ))}
         </View>
 
-        <Text style={styles.label}>{t.backup}</Text>
+        <View style={styles.backupLabelRow}>
+          <Text style={[styles.label, styles.labelNoMargin]}>{t.backup}</Text>
+          <Pressable onPress={onBackupHelp} hitSlop={10} style={styles.helpBtn}>
+            <Ionicons name="help-circle-outline" size={16} color={colors.muted} />
+          </Pressable>
+        </View>
         <Text style={styles.helperText}>{t.backupHint}</Text>
+        {!isPremium() && (
+          <Text style={styles.usageHint}>
+            {t.backupUsageHint(backupActionsUsed(), FREE_BACKUP_ACTIONS_PER_MONTH)}
+          </Text>
+        )}
         <View style={styles.backupRow}>
           <Pressable
             style={[styles.backupBtn, styles.backupBtnGhost]}
@@ -433,6 +471,20 @@ const makeStyles = (colors: Colors) =>
     },
     helperText: {
       fontSize: 12,
+      color: colors.muted,
+      marginTop: -space.xs,
+      marginBottom: space.sm,
+    },
+    labelNoMargin: { marginTop: 0, marginBottom: 0 },
+    backupLabelRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.xs,
+      marginTop: space.lg,
+    },
+    helpBtn: { padding: 2 },
+    usageHint: {
+      fontSize: 11,
       color: colors.muted,
       marginTop: -space.xs,
       marginBottom: space.sm,

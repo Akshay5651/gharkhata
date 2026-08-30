@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, LogBox, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, ActivityIndicator, LogBox, Text, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -24,21 +24,44 @@ LogBox.ignoreLogs([
 
 function Shell() {
   const { colors, mode } = useTheme();
+  const opacity = useRef(new Animated.Value(1)).current;
+  const isFirstRender = useRef(true);
+
+  // A brief dip-and-recover rather than per-color interpolation: every
+  // screen computes its styles fresh from `colors` the instant `mode`
+  // changes, so the swap is already instant underneath. Masking that one
+  // frame with a quick fade is what makes it read as a smooth transition
+  // instead of a hard cut, without animating dozens of components' colors.
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    opacity.setValue(0.4);
+    Animated.timing(opacity, {
+      toValue: 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [mode, opacity]);
+
   return (
     <>
       <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: colors.bg },
-        }}
-      >
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen
-          name="worker/[id]"
-          options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
-        />
-      </Stack>
+      <Animated.View style={{ flex: 1, opacity }}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: colors.bg },
+          }}
+        >
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen
+            name="worker/[id]"
+            options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+          />
+        </Stack>
+      </Animated.View>
       <AppAlertHost />
     </>
   );

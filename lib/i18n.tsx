@@ -131,7 +131,7 @@ const en = {
   freeWorkers: (n: number) => `${n} workers`,
   freeHistory: (n: number) => `${n} months history`,
   featUnlimited: 'Add as many workers as you want',
-  featHistory: 'Every past month, forever',
+  featHistory: 'Previous months history',
   featBackup: 'Backup and restore your records',
   featBrandedPdf: 'Your name and signature on slips',
   featReminders: 'Daily reminder to mark attendance',
@@ -209,6 +209,8 @@ const en = {
   helpUsualQty: 'The amount they usually deliver each day. Pre-fills on Home so marking a normal day is one tap.',
   helpHiredOn: 'The date they started. Attendance and salary only count from this date onward.',
   helpHowLong: 'Ongoing if there’s no fixed end date, or set a duration for a fixed-term job.',
+  weeklyOffLabel: 'Weekly off',
+  helpWeeklyOff: 'Which day(s) are their regular day off, if any? That day is automatically counted as paid, whether or not you mark it on the Calendar. Leave blank if they work every day, or if their off day changes week to week.',
 
   notStarted: 'Not started',
   payingNow: 'Paying now',
@@ -220,6 +222,13 @@ const en = {
   ok: 'OK',
   deleteWorkerTitle: (name: string) => `Delete ${name}?`,
   deleteWorkerBody: 'Their attendance and payment history stays saved — you just won’t see them day to day.',
+
+  backupGuideTitle: 'Backup & Restore, explained',
+  backupGuideBody:
+    'Export saves everything — every worker, every day marked, every advance and payment — into one file, and opens your phone’s share screen so you can send it to yourself (WhatsApp, email, Drive, wherever).\n\nRestore does the opposite: pick a file you exported earlier and it REPLACES everything currently on this phone with it. Use Export regularly as a safety net, and Restore when you\'ve switched phones or reinstalled the app.\n\nFree plan: 2 of these actions a month, export and restore combined. Upgrading removes the limit.',
+  backupLimitTitle: 'Free limit reached',
+  backupLimitBody: 'The free plan allows 2 backup actions a month. Upgrade for unlimited backups.',
+  backupUsageHint: (used: number, limit: number) => `${used} of ${limit} used this month`,
 };
 
 type Dict = typeof en;
@@ -339,7 +348,7 @@ const hi: Dict = {
   freeWorkers: (n: number) => `${n} कामगार`,
   freeHistory: (n: number) => `${n} महीने का रिकॉर्ड`,
   featUnlimited: 'जितने चाहें उतने कामगार जोड़ें',
-  featHistory: 'हर पुराना महीना, हमेशा के लिए',
+  featHistory: 'पिछले महीनों का रिकॉर्ड',
   featBackup: 'रिकॉर्ड का बैकअप और वापस लाना',
   featBrandedPdf: 'पर्ची पर आपका नाम और हस्ताक्षर',
   featReminders: 'हाज़िरी लगाने की रोज़ याद',
@@ -417,6 +426,8 @@ const hi: Dict = {
   helpUsualQty: 'रोज़ जितना देते हैं। होम स्क्रीन पर पहले से भरा रहेगा, आम दिन एक टैप में लगेगा।',
   helpHiredOn: 'जिस दिन से शुरू किया। हाज़िरी और तनख्वाह इसी दिन से गिनी जाएगी।',
   helpHowLong: 'कोई तय तारीख नहीं तो लगातार चुनें, वरना समय सीमा तय करें।',
+  weeklyOffLabel: 'साप्ताहिक छुट्टी',
+  helpWeeklyOff: 'इनकी हफ़्ते में कौन सी छुट्टी तय है, अगर कोई है? उस दिन का भुगतान अपने आप गिना जाएगा, चाहे कैलेंडर में लगाएं या नहीं। अगर हर दिन काम करते हैं, या छुट्टी का दिन बदलता रहता है, तो खाली छोड़ दें।',
 
   notStarted: 'अभी शुरू नहीं हुआ',
   payingNow: 'अभी कितना दे रहे हैं',
@@ -428,6 +439,13 @@ const hi: Dict = {
   ok: 'ठीक है',
   deleteWorkerTitle: (name: string) => `${name} को हटाएँ?`,
   deleteWorkerBody: 'इनकी हाज़िरी और भुगतान का रिकॉर्ड सुरक्षित रहेगा — बस रोज़ाना दिखना बंद हो जाएगा।',
+
+  backupGuideTitle: 'बैकअप और रीस्टोर — पूरी जानकारी',
+  backupGuideBody:
+    'एक्सपोर्ट सब कुछ एक फ़ाइल में सेव करता है — हर कामगार, हर दिन की हाज़िरी, हर एडवांस और भुगतान — और फ़ोन की शेयर स्क्रीन खोल देता है ताकि आप उसे खुद को भेज सकें (व्हाट्सएप, ईमेल, ड्राइव, कहीं भी)।\n\nरीस्टोर उल्टा काम करता है: पहले एक्सपोर्ट की गई फ़ाइल चुनें और यह इस फ़ोन पर मौजूद सब कुछ उससे बदल देगा। सुरक्षा के लिए नियमित रूप से एक्सपोर्ट करें, और फ़ोन बदलने या ऐप फिर से डालने पर रीस्टोर करें।\n\nमुफ़्त प्लान: महीने में 2 बार, एक्सपोर्ट और रीस्टोर मिलाकर। अपग्रेड करने पर कोई सीमा नहीं।',
+  backupLimitTitle: 'मुफ़्त सीमा पूरी',
+  backupLimitBody: 'मुफ़्त प्लान में महीने में 2 बैकअप एक्शन मिलते हैं। बिना सीमा के लिए अपग्रेड करें।',
+  backupUsageHint: (used: number, limit: number) => `${limit} में से ${used} इस्तेमाल`,
 };
 
 const DICTS: Record<Lang, Dict> = { en, hi };

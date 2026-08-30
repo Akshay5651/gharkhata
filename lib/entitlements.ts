@@ -109,3 +109,31 @@ export function tierHiddenCount(): number {
     (h) => h.is_active === 0 && h.archived_at === null,
   ).length;
 }
+
+/* ---------- backup / restore usage ---------- */
+
+/** Export and Restore share one monthly allowance, not one each. */
+export const FREE_BACKUP_ACTIONS_PER_MONTH = 2;
+
+// Keyed by month so the count resets on its own — nothing to schedule or
+// clear, "this month" is just whatever currentPeriod() returns right now.
+const backupUsageKey = (): string => `backup_actions_${currentPeriod()}`;
+
+export function backupActionsUsed(): number {
+  return Number(getSetting(backupUsageKey()) ?? '0');
+}
+
+export function backupActionsRemaining(): number {
+  if (isPremium()) return Infinity;
+  return Math.max(0, FREE_BACKUP_ACTIONS_PER_MONTH - backupActionsUsed());
+}
+
+export function canUseBackupAction(): boolean {
+  return isPremium() || backupActionsRemaining() > 0;
+}
+
+/** Call once an export or restore actually completes — not on cancel. */
+export function recordBackupActionUsed(): void {
+  if (isPremium()) return;
+  setSetting(backupUsageKey(), String(backupActionsUsed() + 1));
+}

@@ -32,6 +32,16 @@ const QUANTITY_PRESETS = [0.25, 0.5, 0.75, 1, 1.5, 2, 2.5, 3, 4, 5];
 /** Common units for what a household pays by delivery rather than by day. */
 const UNIT_PRESETS = ['kg', 'litre', 'piece', 'dozen', 'packet'];
 
+/** 0 = Sunday, matching JS Date#getDay() and how weekly_offs is stored. */
+const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+function parseWeeklyOffsCsv(csv: string): number[] {
+  return csv
+    .split(',')
+    .map((s) => Number(s.trim()))
+    .filter((n) => Number.isInteger(n) && n >= 0 && n <= 6);
+}
+
 export default function WorkerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -58,6 +68,17 @@ export default function WorkerScreen() {
   const [defaultQty, setDefaultQty] = useState(
     existing?.default_quantity != null ? String(existing.default_quantity) : '',
   );
+  const [weeklyOffs, setWeeklyOffs] = useState<number[]>(
+    existing ? parseWeeklyOffsCsv(existing.weekly_offs) : [],
+  );
+
+  const toggleWeeklyOff = (day: number) => {
+    setWeeklyOffs((prev) =>
+      prev.includes(day)
+        ? prev.filter((d) => d !== day)
+        : [...prev, day].sort(),
+    );
+  };
 
   const [term, setTerm] = useState<Term>(existing?.end_date ? 'days' : 'ongoing');
   const [termAmount, setTermAmount] = useState('');
@@ -132,6 +153,7 @@ export default function WorkerScreen() {
         salaryType === 'per_unit' && Number(defaultQty) > 0
           ? Number(defaultQty)
           : null,
+      weekly_offs: weeklyOffs.join(','),
     };
 
     if (isNew) {
@@ -330,6 +352,26 @@ export default function WorkerScreen() {
           </>
         )}
 
+        <FieldLabel text={t.weeklyOffLabel} help={t.helpWeeklyOff} />
+        <View style={styles.weekRow}>
+          {WEEKDAYS.map((label, day) => {
+            const active = weeklyOffs.includes(day);
+            return (
+              <Pressable
+                key={day}
+                onPress={() => toggleWeeklyOff(day)}
+                style={[styles.weekDay, active && styles.weekDayActive]}
+              >
+                <Text
+                  style={[styles.weekDayText, active && styles.weekDayTextActive]}
+                >
+                  {label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
         <FieldLabel text={t.hiredOn} required help={t.helpHiredOn} />
         <Pressable style={styles.input} onPress={() => setShowPicker(true)}>
           <Text style={styles.dateText}>{formatDateKey(startDate)}</Text>
@@ -468,6 +510,20 @@ const makeStyles = (colors: Colors) =>
     presetActive: { backgroundColor: colors.primary, borderColor: colors.primary },
     presetText: { fontSize: 13, fontWeight: '600', color: colors.text },
     presetTextActive: { color: colors.onPrimary },
+    weekRow: { flexDirection: 'row', gap: space.xs },
+    weekDay: {
+      flex: 1,
+      aspectRatio: 1,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    weekDayActive: { backgroundColor: colors.leave, borderColor: colors.leave },
+    weekDayText: { fontSize: 13, fontWeight: '700', color: colors.muted },
+    weekDayTextActive: { color: '#FFFFFF' },
     saveBtn: {
       backgroundColor: colors.primary,
       paddingVertical: space.md,
