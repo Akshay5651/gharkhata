@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Image, Pressable, StyleSheet, Text } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, radius, useTheme } from '@/lib/theme';
@@ -15,7 +15,12 @@ import ProfileSheet from './ProfileSheet';
 export default function ProfileButton() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const [profile, setProfile] = useState<OwnerProfile>({ name: '', phone: '', email: '' });
+  const [profile, setProfile] = useState<OwnerProfile>({
+    name: '',
+    phone: '',
+    email: '',
+    photoUri: null,
+  });
   const [open, setOpen] = useState(false);
 
   useFocusEffect(
@@ -29,7 +34,9 @@ export default function ProfileButton() {
   return (
     <>
       <Pressable onPress={() => setOpen(true)} style={styles.btn} hitSlop={10}>
-        {initial ? (
+        {profile.photoUri ? (
+          <Image source={{ uri: profile.photoUri }} style={styles.photo} />
+        ) : initial ? (
           <Text style={styles.initial}>{initial}</Text>
         ) : (
           <Ionicons name="person-outline" size={18} color={colors.text} />
@@ -55,6 +62,8 @@ const makeStyles = (colors: Colors) =>
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.border,
+      overflow: 'hidden',
     },
+    photo: { width: '100%', height: '100%' },
     initial: { fontSize: 16, fontWeight: '700', color: colors.primary },
   });

@@ -20,13 +20,15 @@ import {
   setSetting,
 } from '@/lib/db';
 import { FREE_HELPER_LIMIT, isPremium, remainingHelperSlots } from '@/lib/entitlements';
-import { formatDateKey, todayKey } from '@/lib/dates';
+import { dayOfWeek, formatDateKey, todayKey } from '@/lib/dates';
 import { formatINR } from '@/lib/money';
+import { parseWeeklyOffs } from '@/lib/salary';
 import { AttendanceStatus, Helper } from '@/lib/types';
 import { Colors, radius, space, useTheme } from '@/lib/theme';
 import { useI18n } from '@/lib/i18n';
 import GuideSheet from '@/components/GuideSheet';
 import ProfileButton from '@/components/ProfileButton';
+import ScreenBackdrop from '@/components/ScreenBackdrop';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -37,6 +39,7 @@ export default function HomeScreen() {
   const [helpers, setHelpers] = useState<Helper[]>([]);
   const [marks, setMarks] = useState<Record<number, AttendanceStatus>>({});
   const [qty, setQty] = useState<Record<number, string>>({});
+  const [hrs, setHrs] = useState<Record<number, string>>({});
   const [slots, setSlots] = useState(FREE_HELPER_LIMIT);
   const [guideOpen, setGuideOpen] = useState(false);
   const date = todayKey();
@@ -67,6 +70,13 @@ export default function HomeScreen() {
           .map((a) => [a.helper_id, String(a.quantity)]),
       ),
     );
+    setHrs(
+      Object.fromEntries(
+        today
+          .filter((a) => a.hours_worked != null)
+          .map((a) => [a.helper_id, String(a.hours_worked)]),
+      ),
+    );
   }, [date]);
 
   useFocusEffect(useCallback(() => load(), [load]));
@@ -95,7 +105,12 @@ export default function HomeScreen() {
             ? Number(existing)
             : (helper.default_quantity ?? null)
           : null;
-      markAttendance(helper.id, date, status, { quantity });
+      const existingHrs = hrs[helper.id];
+      const hours =
+        helper.salary_type === 'hourly' && Number(existingHrs) > 0
+          ? Number(existingHrs)
+          : null;
+      markAttendance(helper.id, date, status, { quantity, hours });
     }
     load();
   };
@@ -110,11 +125,20 @@ export default function HomeScreen() {
     }
   };
 
+  const onHrsChange = (helper: Helper, text: string) => {
+    setHrs((prev) => ({ ...prev, [helper.id]: text }));
+    const status = marks[helper.id];
+    if (status && Number(text) >= 0 && text !== '') {
+      markAttendance(helper.id, date, status, { hours: Number(text) });
+    }
+  };
+
   const markedCount = helpers.filter((h) => marks[h.id]).length;
   const locked = slots <= 0;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
+      <ScreenBackdrop icon="people" />
       <View style={styles.header}>
         <ProfileButton />
         <View style={styles.headerText}>
@@ -194,30 +218,34 @@ export default function HomeScreen() {
                 />
               </Pressable>
 
-              <View style={styles.row}>
-                {quick.map((option) => {
-                  const active = marks[helper.id] === option.status;
-                  return (
-                    <Pressable
-                      key={option.status}
-                      onPress={() => onMark(helper, option.status)}
-                      style={[
-                        styles.chip,
-                        active && {
-                          backgroundColor: option.color,
-                          borderColor: option.color,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[styles.chipText, active && styles.chipTextActive]}
+              {!marks[helper.id] && parseWeeklyOffs(helper).includes(dayOfWeek(date)) ? (
+                <Text style={styles.offNote}>{t.weeklyOffBadge}</Text>
+              ) : (
+                <View style={styles.row}>
+                  {quick.map((option) => {
+                    const active = marks[helper.id] === option.status;
+                    return (
+                      <Pressable
+                        key={option.status}
+                        onPress={() => onMark(helper, option.status)}
+                        style={[
+                          styles.chip,
+                          active && {
+                            backgroundColor: option.color,
+                            borderColor: option.color,
+                          },
+                        ]}
                       >
-                        {option.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
+                        <Text
+                          style={[styles.chipText, active && styles.chipTextActive]}
+                        >
+                          {option.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              )}
 
               {helper.salary_type === 'per_unit' && marks[helper.id] && (
                 <View style={styles.qtyRow}>
@@ -240,6 +268,26 @@ export default function HomeScreen() {
                             helper.default_quantity ||
                             0),
                       ),
+                    )}
+                  </Text>
+                </View>
+              )}
+
+              {helper.salary_type === 'hourly' && marks[helper.id] && (
+                <View style={styles.qtyRow}>
+                  <Text style={styles.qtyLabel}>{t.hoursWorked}</Text>
+                  <TextInput
+                    style={styles.qtyInput}
+                    keyboardType="decimal-pad"
+                    value={hrs[helper.id] ?? ''}
+                    onChangeText={(text) => onHrsChange(helper, text)}
+                    placeholder="0"
+                    placeholderTextColor={colors.muted}
+                    selectTextOnFocus
+                  />
+                  <Text style={styles.qtyAmount}>
+                    {formatINR(
+                      Math.round(helper.salary_paise * (Number(hrs[helper.id]) || 0)),
                     )}
                   </Text>
                 </View>
@@ -277,7 +325,7 @@ export default function HomeScreen() {
 
 const makeStyles = (colors: Colors) =>
   StyleSheet.create({
-    safe: { flex: 1, backgroundColor: colors.bg },
+    safe: { flex: 1, backgroundColor: colors.bg, overflow: 'hidden' },
     header: {
       flexDirection: 'row',
       alignItems: 'flex-start',
@@ -341,6 +389,15 @@ const makeStyles = (colors: Colors) =>
       alignItems: 'center',
     },
     chipText: { fontSize: 12, fontWeight: '600', color: colors.muted },
+    offNote: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.muted,
+      backgroundColor: colors.surfaceAlt,
+      borderRadius: radius.pill,
+      paddingVertical: space.sm,
+      textAlign: 'center',
+    },
     qtyRow: {
       flexDirection: 'row',
       alignItems: 'center',

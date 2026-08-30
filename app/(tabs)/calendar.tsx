@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -29,6 +30,7 @@ import { AttendanceStatus, Helper } from '@/lib/types';
 import { Colors, radius, space, useTheme } from '@/lib/theme';
 import { useI18n } from '@/lib/i18n';
 import ProfileButton from '@/components/ProfileButton';
+import ScreenBackdrop from '@/components/ScreenBackdrop';
 import { showAppAlert } from '@/components/AppAlertHost';
 import DayEditor from '@/components/DayEditor';
 
@@ -47,6 +49,7 @@ export default function CalendarScreen() {
   const [period, setPeriod] = useState(currentPeriod());
   const [marks, setMarks] = useState<Record<string, AttendanceStatus>>({});
   const [quantities, setQuantities] = useState<Record<string, number | null>>({});
+  const [hoursByDate, setHoursByDate] = useState<Record<string, number | null>>({});
   const [editing, setEditing] = useState<string | null>(null);
 
   const selected = helpers.find((h) => h.id === selectedId) ?? null;
@@ -79,6 +82,7 @@ export default function CalendarScreen() {
       >,
     );
     setQuantities(Object.fromEntries(rows.map((r) => [r.date, r.quantity])));
+    setHoursByDate(Object.fromEntries(rows.map((r) => [r.date, r.hours_worked])));
   }, []);
 
   /**
@@ -162,15 +166,26 @@ export default function CalendarScreen() {
       return;
     }
 
+    // An untouched weekly off is already paid in full — nothing to mark.
+    // A day that already carries an explicit status (e.g. an earlier
+    // exceptional-work note) still opens normally, so it stays correctable.
+    if (!marks[dateKey] && offs.includes(dayOfWeek(dateKey))) {
+      showAppAlert(t.weeklyOffTapTitle, t.weeklyOffTapBody(selected.name), [
+        { text: t.ok },
+      ]);
+      return;
+    }
+
     setEditing(dateKey);
   };
 
   const onSaveDay = (
     status: AttendanceStatus | null,
     quantity: number | null,
+    hours: number | null,
   ) => {
     if (!selected || !editing) return;
-    if (status) markAttendance(selected.id, editing, status, { quantity });
+    if (status) markAttendance(selected.id, editing, status, { quantity, hours });
     else clearAttendance(selected.id, editing);
     loadMarks(selected.id, period);
     setEditing(null);
@@ -195,6 +210,7 @@ export default function CalendarScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
+      <ScreenBackdrop icon="calendar" />
       <View style={styles.header}>
         <View style={styles.titleRow}>
           <ProfileButton />
@@ -230,12 +246,28 @@ export default function CalendarScreen() {
                   }}
                   style={[styles.tab, active && styles.tabActive]}
                 >
-                  <Text style={[styles.tabText, active && styles.tabTextActive]}>
+                  {helper.photo_uri && (
+                    <>
+                      <Image source={{ uri: helper.photo_uri }} style={styles.tabPhoto} />
+                      <View style={styles.tabScrim} />
+                    </>
+                  )}
+                  <Text
+                    style={[
+                      styles.tabText,
+                      active && styles.tabTextActive,
+                      helper.photo_uri && styles.tabTextOnPhoto,
+                    ]}
+                  >
                     {helper.name}
                   </Text>
                   {stat && (
                     <Text
-                      style={[styles.tabStat, active && styles.tabStatActive]}
+                      style={[
+                        styles.tabStat,
+                        active && styles.tabStatActive,
+                        helper.photo_uri && styles.tabStatOnPhoto,
+                      ]}
                     >
                       {t.daysOf(stat.marked, stat.total)}
                     </Text>
@@ -335,6 +367,8 @@ export default function CalendarScreen() {
         dateKey={editing}
         status={editing ? marks[editing] : undefined}
         quantity={editing ? (quantities[editing] ?? null) : null}
+        hours={editing ? (hoursByDate[editing] ?? null) : null}
+        isWeeklyOff={editing ? offs.includes(dayOfWeek(editing)) : false}
         onClose={() => setEditing(null)}
         onSave={onSaveDay}
       />
@@ -344,7 +378,7 @@ export default function CalendarScreen() {
 
 const makeStyles = (colors: Colors) =>
   StyleSheet.create({
-    safe: { flex: 1, backgroundColor: colors.bg },
+    safe: { flex: 1, backgroundColor: colors.bg, overflow: 'hidden' },
     header: { paddingHorizontal: space.lg, paddingTop: space.md },
     titleRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
     title: { fontSize: 28, fontWeight: '700', color: colors.text },
@@ -371,12 +405,33 @@ const makeStyles = (colors: Colors) =>
       backgroundColor: colors.surface,
       marginRight: space.sm,
       alignItems: 'center',
+      overflow: 'hidden',
     },
     tabActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+    // Faded, not full-strength, so the photo is still recognizable behind
+    // the name — a photo alone would either wash out the text or hide the
+    // face, so the image itself is dimmed rather than fully covered.
+    tabPhoto: { ...StyleSheet.absoluteFillObject, opacity: 0.4 },
+    // A fixed dark scrim, not theme-aware — it has to guarantee white text
+    // stays legible over a photo of any brightness, in either app theme.
+    tabScrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
     tabText: { fontSize: 14, fontWeight: '600', color: colors.text },
     tabTextActive: { color: colors.onPrimary },
+    tabTextOnPhoto: {
+      color: '#FFFFFF',
+      textShadowColor: 'rgba(0,0,0,0.8)',
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 3,
+    },
     tabStat: { fontSize: 11, color: colors.muted, marginTop: 1 },
     tabStatActive: { color: colors.onPrimary, opacity: 0.75 },
+    tabStatOnPhoto: {
+      color: '#FFFFFF',
+      opacity: 0.9,
+      textShadowColor: 'rgba(0,0,0,0.8)',
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 3,
+    },
     body: { padding: space.lg },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     empty: { color: colors.muted },

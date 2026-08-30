@@ -22,7 +22,12 @@ const MARK_BOX = { left: 90, top: 90, width: 1080, height: 735 };
 // safe-zone percentage gave ~16% side margin but ~27% top/bottom, which read
 // as "no side margin at all" next to the generous vertical gap. Sizing off
 // width directly makes the mark itself larger too (less empty canvas overall).
-const SIDE_MARGIN_FRACTION = 0.09;
+//
+// 0.20 matches Android's actual adaptive-icon safe zone: only the center 66dp
+// of the 108dp foreground is guaranteed visible under every launcher mask
+// (circle, squircle, rounded square), which works out to ~19.4% margin per
+// side minimum. A smaller margin (0.09) still got clipped by circular masks.
+const SIDE_MARGIN_FRACTION = 0.2;
 const CANVAS = Math.round(MARK_BOX.width / (1 - 2 * SIDE_MARGIN_FRACTION));
 
 async function run() {

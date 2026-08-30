@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, ActivityIndicator, LogBox, Text, View } from 'react-native';
+import {
+  Animated,
+  ActivityIndicator,
+  Dimensions,
+  Easing,
+  LogBox,
+  Text,
+  View,
+} from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -22,10 +30,29 @@ LogBox.ignoreLogs([
   'expo-notifications: Android Push notifications (remote notifications) functionality provided by expo-notifications was removed from Expo Go',
 ]);
 
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// Oversized and rotated so its edge cuts across the screen on a diagonal
+// rather than a flat horizontal line — sized well past the screen's own
+// diagonal so no corner is ever left uncovered mid-sweep at any rotation.
+const CURTAIN_SIZE = Math.max(SCREEN_WIDTH, SCREEN_HEIGHT) * 1.8;
+const CURTAIN_TRAVEL = CURTAIN_SIZE;
+
+type SweepDir = 'up' | 'down';
+
 function Shell() {
-  const { colors, mode } = useTheme();
+  const { colors, mode, accent } = useTheme();
   const opacity = useRef(new Animated.Value(1)).current;
+  // Bottom-left-to-top-right ('up') or the reverse ('down') — a single
+  // Animated.Value driving translateY is enough because the band is rotated
+  // onto a diagonal, so a straight vertical slide already reads as diagonal
+  // motion across the screen.
+  // Starts fully off-screen (below, in the "about to sweep up" position) —
+  // it must never rest at 0, which is the fully-covering center position.
+  const curtainY = useRef(new Animated.Value(CURTAIN_TRAVEL)).current;
   const isFirstRender = useRef(true);
+  const prevMode = useRef(mode);
+  const lastDir = useRef<SweepDir>('up');
 
   // A brief dip-and-recover rather than per-color interpolation: every
   // screen computes its styles fresh from `colors` the instant `mode`
@@ -35,15 +62,40 @@ function Shell() {
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
+      prevMode.current = mode;
       return;
     }
+
+    // A mode switch always sweeps a fixed direction (dark = up, light =
+    // down) so the two stay visually opposite and predictable. An
+    // accent-only change has no natural direction, so it alternates from
+    // whichever way the last sweep went, rather than always repeating one.
+    const modeChanged = mode !== prevMode.current;
+    const direction: SweepDir = modeChanged
+      ? mode === 'dark'
+        ? 'up'
+        : 'down'
+      : lastDir.current === 'up'
+        ? 'down'
+        : 'up';
+    lastDir.current = direction;
+    prevMode.current = mode;
+
     opacity.setValue(0.4);
     Animated.timing(opacity, {
       toValue: 1,
-      duration: 200,
+      duration: 250,
       useNativeDriver: true,
     }).start();
-  }, [mode, opacity]);
+
+    curtainY.setValue(direction === 'up' ? CURTAIN_TRAVEL : -CURTAIN_TRAVEL);
+    Animated.timing(curtainY, {
+      toValue: direction === 'up' ? -CURTAIN_TRAVEL : CURTAIN_TRAVEL,
+      duration: 700,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [mode, accent, opacity, curtainY]);
 
   return (
     <>
@@ -62,6 +114,18 @@ function Shell() {
           />
         </Stack>
       </Animated.View>
+      <Animated.View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          top: (SCREEN_HEIGHT - CURTAIN_SIZE) / 2,
+          left: (SCREEN_WIDTH - CURTAIN_SIZE) / 2,
+          width: CURTAIN_SIZE,
+          height: CURTAIN_SIZE,
+          backgroundColor: colors.primary,
+          transform: [{ translateY: curtainY }, { rotate: '-35deg' }],
+        }}
+      />
       <AppAlertHost />
     </>
   );

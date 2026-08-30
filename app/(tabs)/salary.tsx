@@ -37,6 +37,7 @@ import { Helper, Payment } from '@/lib/types';
 import { Colors, radius, space, useTheme } from '@/lib/theme';
 import { useI18n } from '@/lib/i18n';
 import ProfileButton from '@/components/ProfileButton';
+import ScreenBackdrop from '@/components/ScreenBackdrop';
 import { showAppAlert } from '@/components/AppAlertHost';
 import LedgerEntrySheet from '@/components/LedgerEntrySheet';
 import PaymentSheet from '@/components/PaymentSheet';
@@ -190,6 +191,7 @@ export default function SalaryScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
+      <ScreenBackdrop icon="wallet" />
       <View style={styles.header}>
         <View style={styles.titleRow}>
           <ProfileButton />
@@ -387,7 +389,7 @@ export default function SalaryScreen() {
 
 const makeStyles = (colors: Colors) =>
   StyleSheet.create({
-    safe: { flex: 1, backgroundColor: colors.bg },
+    safe: { flex: 1, backgroundColor: colors.bg, overflow: 'hidden' },
     header: { paddingHorizontal: space.lg, paddingTop: space.md },
     titleRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
     title: { fontSize: 28, fontWeight: '700', color: colors.text },

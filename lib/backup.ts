@@ -16,14 +16,26 @@ function isBackupPayload(value: unknown): value is BackupPayload {
   );
 }
 
+export type ExportOutcome = { status: 'cancelled' } | { status: 'saved'; fileName: string };
+
 /**
- * Writes the whole database to a JSON file in the cache directory and hands
- * it to the system share sheet — WhatsApp, Drive, email, whatever the user
- * picks. The file is a snapshot, not a live sync: nothing keeps it updated.
+ * Writes the whole database to a JSON file in the app's own cache directory
+ * and hands it to the system share sheet — "Save to device" from there still
+ * lets the user pick any folder, just through Android's own well-tested
+ * document-tree flow. A direct pickDirectoryAsync() + File.create() attempt
+ * was tried first but failed unpredictably across devices/providers with a
+ * spurious "already exists" error even against a freshly created, empty
+ * folder — not something diagnosable without device logs, so this reverts
+ * to the flow that was already proven to work.
+ *
+ * Android never reports back which folder the user actually picked in the
+ * share sheet, so the filename is the one thing worth surfacing back to
+ * them afterward — it's what they'll look for, wherever they saved it.
  */
-export async function exportBackupFile(): Promise<void> {
+export async function exportBackupFile(): Promise<ExportOutcome> {
   const payload = exportAllData();
-  const file = new File(Paths.cache, `gharkhata-backup-${todayKey()}.json`);
+  const fileName = `GharKhata_Backup_${todayKey()}.json`;
+  const file = new File(Paths.cache, fileName);
   if (file.exists) file.delete();
   file.create();
   file.write(JSON.stringify(payload));
@@ -35,6 +47,7 @@ export async function exportBackupFile(): Promise<void> {
     mimeType: 'application/json',
     dialogTitle: 'GharKhata backup',
   });
+  return { status: 'saved', fileName };
 }
 
 export type ImportOutcome =

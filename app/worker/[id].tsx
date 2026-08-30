@@ -133,7 +133,11 @@ export default function WorkerScreen() {
       quality: 0.6,
     });
     if (result.canceled || !result.assets?.[0]) return;
-    setPhoto(savePhoto(result.assets[0].uri));
+    try {
+      setPhoto(savePhoto(result.assets[0].uri));
+    } catch {
+      showAppAlert(t.addPhoto, t.photoErrorBody, [{ text: t.ok }]);
+    }
   };
 
   const onPickDate = (_: unknown, picked?: Date) => {
@@ -146,7 +150,9 @@ export default function WorkerScreen() {
       ? t.monthlySalary
       : salaryType === 'per_unit'
         ? t.ratePerUnit
-        : t.dailyWage;
+        : salaryType === 'hourly'
+          ? t.hourlyRate
+          : t.dailyWage;
 
   const onSave = () => {
     const rupees = Number(salary);
@@ -295,6 +301,7 @@ export default function WorkerScreen() {
             [
               { value: 'monthly' as SalaryType, label: t.perMonth },
               { value: 'daily' as SalaryType, label: t.perDay },
+              { value: 'hourly' as SalaryType, label: t.perHour },
               { value: 'per_unit' as SalaryType, label: t.perUnit },
             ]
           ).map((option) => (

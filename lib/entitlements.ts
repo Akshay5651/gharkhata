@@ -112,28 +112,33 @@ export function tierHiddenCount(): number {
 
 /* ---------- backup / restore usage ---------- */
 
-/** Export and Restore share one monthly allowance, not one each. */
-export const FREE_BACKUP_ACTIONS_PER_MONTH = 2;
+/**
+ * Restore is not gated at all, on any plan — it is how someone gets their
+ * own data back after losing a phone or reinstalling, not a growth feature,
+ * so limiting it risks real, unrecoverable data loss for a free-tier user.
+ * Only Export carries a soft monthly nudge toward premium.
+ */
+export const FREE_EXPORT_ACTIONS_PER_MONTH = 2;
 
 // Keyed by month so the count resets on its own — nothing to schedule or
 // clear, "this month" is just whatever currentPeriod() returns right now.
-const backupUsageKey = (): string => `backup_actions_${currentPeriod()}`;
+const exportUsageKey = (): string => `export_actions_${currentPeriod()}`;
 
-export function backupActionsUsed(): number {
-  return Number(getSetting(backupUsageKey()) ?? '0');
+export function exportActionsUsed(): number {
+  return Number(getSetting(exportUsageKey()) ?? '0');
 }
 
-export function backupActionsRemaining(): number {
+export function exportActionsRemaining(): number {
   if (isPremium()) return Infinity;
-  return Math.max(0, FREE_BACKUP_ACTIONS_PER_MONTH - backupActionsUsed());
+  return Math.max(0, FREE_EXPORT_ACTIONS_PER_MONTH - exportActionsUsed());
 }
 
-export function canUseBackupAction(): boolean {
-  return isPremium() || backupActionsRemaining() > 0;
+export function canExport(): boolean {
+  return isPremium() || exportActionsRemaining() > 0;
 }
 
-/** Call once an export or restore actually completes — not on cancel. */
-export function recordBackupActionUsed(): void {
+/** Call once an export actually completes — not on cancel. */
+export function recordExportUsed(): void {
   if (isPremium()) return;
-  setSetting(backupUsageKey(), String(backupActionsUsed() + 1));
+  setSetting(exportUsageKey(), String(exportActionsUsed() + 1));
 }

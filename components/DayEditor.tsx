@@ -25,8 +25,15 @@ export interface DayEditorProps {
   dateKey: string | null;
   status: AttendanceStatus | undefined;
   quantity: number | null;
+  hours: number | null;
+  /** True when this date falls on the worker's regular weekly off. */
+  isWeeklyOff: boolean;
   onClose: () => void;
-  onSave: (status: AttendanceStatus | null, quantity: number | null) => void;
+  onSave: (
+    status: AttendanceStatus | null,
+    quantity: number | null,
+    hours: number | null,
+  ) => void;
 }
 
 /**
@@ -41,6 +48,8 @@ export default function DayEditor({
   dateKey,
   status,
   quantity,
+  hours,
+  isWeeklyOff,
   onClose,
   onSave,
 }: DayEditorProps) {
@@ -50,6 +59,7 @@ export default function DayEditor({
 
   const [draft, setDraft] = useState<AttendanceStatus | null>(status ?? null);
   const [qty, setQty] = useState<string>('');
+  const [hrs, setHrs] = useState<string>('');
 
   // Re-seed whenever a different day is opened, otherwise the sheet would
   // show whatever was left from the day before.
@@ -63,14 +73,18 @@ export default function DayEditor({
           ? String(helper.default_quantity)
           : '',
     );
-  }, [visible, dateKey, status, quantity, helper]);
+    setHrs(hours != null ? String(hours) : '');
+  }, [visible, dateKey, status, quantity, hours, helper]);
 
   if (!helper || !dateKey) return null;
 
   const isPerUnit = helper.salary_type === 'per_unit';
+  const isHourly = helper.salary_type === 'hourly';
   const unit = helper.unit_label || t.unit.toLowerCase();
   const showQty = isPerUnit && draft != null && draft !== 'absent';
+  const showHours = isHourly && draft != null && draft !== 'absent';
   const numericQty = Number(qty) > 0 ? Number(qty) : 0;
+  const numericHrs = Number(hrs) > 0 ? Number(hrs) : 0;
 
   const options: { status: AttendanceStatus; label: string; color: string }[] = [
     { status: 'present', label: t.present, color: colors.present },
@@ -79,7 +93,11 @@ export default function DayEditor({
   ];
 
   const commit = () => {
-    onSave(draft, draft && isPerUnit && draft !== 'absent' ? numericQty : null);
+    onSave(
+      draft,
+      draft && isPerUnit && draft !== 'absent' ? numericQty : null,
+      draft && isHourly && draft !== 'absent' ? numericHrs : null,
+    );
   };
 
   return (
@@ -100,6 +118,13 @@ export default function DayEditor({
 
           <Text style={styles.date}>{formatDateKey(dateKey)}</Text>
           <Text style={styles.who}>{helper.name}</Text>
+
+          {isWeeklyOff && (
+            <View style={styles.offBadge}>
+              <Text style={styles.offBadgeTitle}>{t.weeklyOffBadge}</Text>
+              <Text style={styles.offBadgeHint}>{t.weeklyOffOverrideHint}</Text>
+            </View>
+          )}
 
           <View style={styles.options}>
             {options.map((option) => {
@@ -173,12 +198,31 @@ export default function DayEditor({
             </>
           )}
 
+          {showHours && (
+            <>
+              <Text style={styles.label}>{t.hoursWorked}</Text>
+              <View style={styles.qtyRow}>
+                <TextInput
+                  style={styles.qtyInput}
+                  keyboardType="decimal-pad"
+                  value={hrs}
+                  onChangeText={setHrs}
+                  selectTextOnFocus
+                />
+                <Text style={styles.qtyUnit}>{t.hoursWorked.toLowerCase()}</Text>
+                <Text style={styles.qtyAmount}>
+                  {formatINR(Math.round(helper.salary_paise * numericHrs))}
+                </Text>
+              </View>
+            </>
+          )}
+
           <View style={styles.actions}>
             <Pressable
               style={[styles.btn, styles.btnGhost]}
               onPress={() => {
                 setDraft(null);
-                onSave(null, null);
+                onSave(null, null, null);
               }}
             >
               <Text style={styles.btnGhostText}>{t.clear}</Text>
@@ -224,6 +268,14 @@ const makeStyles = (colors: Colors) =>
     },
     date: { fontSize: 18, fontWeight: '700', color: colors.text },
     who: { fontSize: 13, color: colors.muted, marginBottom: space.md },
+    offBadge: {
+      backgroundColor: colors.surfaceAlt,
+      borderRadius: radius.md,
+      padding: space.md,
+      marginBottom: space.md,
+    },
+    offBadgeTitle: { fontSize: 13, fontWeight: '700', color: colors.text },
+    offBadgeHint: { fontSize: 12, color: colors.muted, marginTop: 2 },
     options: { flexDirection: 'row', gap: space.sm },
     option: {
       flex: 1,

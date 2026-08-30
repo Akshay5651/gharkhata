@@ -7,7 +7,12 @@ const NOTIF_ID_KEY = 'export_reminder_notif_id';
 const ENABLED_KEY = 'export_reminder_enabled';
 const ASKED_KEY = 'export_reminder_asked';
 
+const DUE_CHANNEL_ID = 'due-reminder';
+const DUE_NOTIF_ID_KEY = 'due_reminder_notif_id';
+const DUE_ENABLED_KEY = 'due_reminder_enabled';
+
 const FIFTEEN_DAYS_SECONDS = 15 * 24 * 60 * 60;
+const THIRTY_DAYS_SECONDS = 30 * 24 * 60 * 60;
 
 /**
  * A local schedule, not a push notification — this app has no server to send
@@ -36,14 +41,39 @@ const COPY = {
   },
 };
 
+const DUE_COPY = {
+  en: {
+    title: 'Check pending salary',
+    body: 'It has been a month — open Salary to check balances due and pay workers on time.',
+    channelName: 'Salary due reminder',
+  },
+  hi: {
+    title: 'बकाया तनख्वाह देखें',
+    body: 'एक महीना हो गया — Salary खोलकर बकाया रकम देखें और समय पर भुगतान करें।',
+    channelName: 'तनख्वाह याद',
+  },
+};
+
 function copy() {
   return getSetting('language') === 'hi' ? COPY.hi : COPY.en;
+}
+
+function dueCopy() {
+  return getSetting('language') === 'hi' ? DUE_COPY.hi : DUE_COPY.en;
 }
 
 async function ensureChannel(): Promise<void> {
   if (Platform.OS !== 'android') return;
   await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
     name: copy().channelName,
+    importance: Notifications.AndroidImportance.DEFAULT,
+  });
+}
+
+async function ensureDueChannel(): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  await Notifications.setNotificationChannelAsync(DUE_CHANNEL_ID, {
+    name: dueCopy().channelName,
     importance: Notifications.AndroidImportance.DEFAULT,
   });
 }
@@ -108,4 +138,54 @@ export async function maybeAskExportReminder(): Promise<void> {
   if (hasAskedExportReminder()) return;
   setSetting(ASKED_KEY, '1');
   await enableExportReminder();
+}
+
+/* ---------- salary due reminder ---------- */
+
+/**
+ * A static monthly nudge, not a live check of the current balance — local
+ * notifications are scheduled ahead of time and cannot query SQLite right
+ * before firing, so this can only say "go look", never "₹X is due". Opt-in
+ * only: unlike the backup reminder, nothing turns this on automatically.
+ */
+export function isDueReminderEnabled(): boolean {
+  return getSetting(DUE_ENABLED_KEY) === '1';
+}
+
+export async function enableDueReminder(): Promise<'granted' | 'denied'> {
+  const perms = await Notifications.requestPermissionsAsync();
+  if (perms.status !== 'granted') {
+    setSetting(DUE_ENABLED_KEY, '0');
+    return 'denied';
+  }
+
+  await ensureDueChannel();
+
+  const existing = getSetting(DUE_NOTIF_ID_KEY);
+  if (existing) {
+    await Notifications.cancelScheduledNotificationAsync(existing).catch(() => {});
+  }
+
+  const { title, body } = dueCopy();
+  const id = await Notifications.scheduleNotificationAsync({
+    content: { title, body },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+      seconds: THIRTY_DAYS_SECONDS,
+      repeats: true,
+      channelId: DUE_CHANNEL_ID,
+    },
+  });
+
+  setSetting(DUE_NOTIF_ID_KEY, id);
+  setSetting(DUE_ENABLED_KEY, '1');
+  return 'granted';
+}
+
+export async function disableDueReminder(): Promise<void> {
+  const existing = getSetting(DUE_NOTIF_ID_KEY);
+  if (existing) {
+    await Notifications.cancelScheduledNotificationAsync(existing).catch(() => {});
+  }
+  setSetting(DUE_ENABLED_KEY, '0');
 }

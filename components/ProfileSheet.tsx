@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -9,9 +10,13 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, radius, space, useTheme } from '@/lib/theme';
 import { useI18n } from '@/lib/i18n';
 import { getOwnerProfile, OwnerProfile, saveOwnerProfile } from '@/lib/profile';
+import { savePhoto } from '@/lib/photos';
+import { showAppAlert } from './AppAlertHost';
 import FieldLabel from './FieldLabel';
 
 export interface ProfileSheetProps {
@@ -33,6 +38,7 @@ export default function ProfileSheet({ visible, onClose, onSaved }: ProfileSheet
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [photo, setPhoto] = useState<string | null>(null);
 
   useEffect(() => {
     if (!visible) return;
@@ -40,13 +46,35 @@ export default function ProfileSheet({ visible, onClose, onSaved }: ProfileSheet
     setName(p.name);
     setPhone(p.phone);
     setEmail(p.email);
+    setPhoto(p.photoUri);
   }, [visible]);
+
+  const onPickPhoto = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      showAppAlert(t.addPhoto, t.photoPermissionBody, [{ text: t.ok }]);
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.6,
+    });
+    if (result.canceled || !result.assets?.[0]) return;
+    try {
+      setPhoto(savePhoto(result.assets[0].uri));
+    } catch {
+      showAppAlert(t.addPhoto, t.photoErrorBody, [{ text: t.ok }]);
+    }
+  };
 
   const onSave = () => {
     const profile: OwnerProfile = {
       name: name.trim(),
       phone: phone.trim(),
       email: email.trim(),
+      photoUri: photo,
     };
     saveOwnerProfile(profile);
     onSaved(profile);
@@ -64,6 +92,17 @@ export default function ProfileSheet({ visible, onClose, onSaved }: ProfileSheet
             <View style={styles.grabber} />
             <Text style={styles.title}>{t.yourProfile}</Text>
             <Text style={styles.hint}>{t.yourProfileHint}</Text>
+
+            <Pressable style={styles.avatarWrap} onPress={onPickPhoto}>
+              {photo ? (
+                <Image source={{ uri: photo }} style={styles.avatar} />
+              ) : (
+                <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                  <Ionicons name="camera-outline" size={24} color={colors.muted} />
+                </View>
+              )}
+              <Text style={styles.avatarHint}>{photo ? t.changePhoto : t.addPhoto}</Text>
+            </Pressable>
 
             <FieldLabel text={t.name} />
             <TextInput
@@ -131,6 +170,20 @@ const makeStyles = (colors: Colors) =>
     },
     title: { fontSize: 20, fontWeight: '700', color: colors.text },
     hint: { fontSize: 13, color: colors.muted, marginTop: 4, lineHeight: 18 },
+    avatarWrap: { alignItems: 'center', gap: space.xs, marginTop: space.md },
+    avatar: {
+      width: 76,
+      height: 76,
+      borderRadius: 38,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    avatarPlaceholder: {
+      backgroundColor: colors.surfaceAlt,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    avatarHint: { fontSize: 12, fontWeight: '600', color: colors.primary },
     input: {
       borderWidth: 1,
       borderColor: colors.border,

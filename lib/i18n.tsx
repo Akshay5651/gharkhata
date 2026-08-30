@@ -105,6 +105,11 @@ const en = {
   totalQty: 'Total',
   daysOf: (a: number, b: number) => `${a}/${b} days`,
 
+  perHour: 'Per hour',
+  hourlyRate: 'Rate per hour',
+  hoursWorked: 'Hours worked',
+  helpHoursWorked: 'How many hours they worked this day. Needed for hourly pay to add up correctly.',
+
   feedback: 'Help us improve',
   feedbackHint: 'One thing that would make GharKhata better for you…',
   send: 'Send',
@@ -128,13 +133,15 @@ const en = {
 
   now: 'NOW',
   withUpgrade: 'With Upgrade',
+  onPremiumTitle: 'You’re on Premium',
+  onPremiumBody: 'Unlimited workers, full history, and every premium feature is unlocked.',
   freeWorkers: (n: number) => `${n} workers`,
-  freeHistory: (n: number) => `${n} months history`,
+  freeHistory: (n: number) => `Last ${n} months history only`,
+  freeRestoreLine: 'Restore your data anytime, always free',
   featUnlimited: 'Add as many workers as you want',
   featHistory: 'Previous months history',
-  featBackup: 'Backup and restore your records',
-  featBrandedPdf: 'Your name and signature on slips',
-  featReminders: 'Daily reminder to mark attendance',
+  featUnlimitedExport: 'Unlimited exports',
+  featReminders: 'Monthly reminder for timely salary pay',
   featAppLock: 'Lock the app with a PIN',
 
   balanceDue: 'Balance due',
@@ -178,6 +185,8 @@ const en = {
   reminderBody: 'A notification every 15 days to export your data.',
   reminderDeniedTitle: 'Notifications blocked',
   reminderDeniedBody: 'Turn on notifications for GharKhata in your phone’s settings to get this reminder.',
+  dueReminderTitle: 'Salary due reminder',
+  dueReminderBody: 'A monthly nudge to check pending balances and pay workers on time.',
   fine: 'Fine',
   amount: 'Amount',
   noteOptional: 'Note (optional)',
@@ -198,14 +207,16 @@ const en = {
   helpWork: 'What they do — helps you tell workers apart at a glance.',
   helpPhone: 'Used to open WhatsApp directly with their payslip. 10 digits, optional.',
   helpUpi: 'Their UPI ID (VPA), used only for the "Pay via UPI" shortcut when recording a payment. Optional.',
-  helpPayType: 'Fixed monthly wage, a daily wage, or a rate per unit like per litre of milk.',
+  helpPayType: 'Fixed monthly wage, a daily wage, an hourly rate, or a rate per unit like per litre of milk.',
   helpUnit: 'The unit they’re paid by — kg, litre, piece, and so on.',
   helpAmount: (type: SalaryType): string =>
     type === 'monthly'
       ? 'The full amount paid each month if they work every day.'
       : type === 'per_unit'
         ? 'The rate paid for one unit — for example ₹40 per litre.'
-        : 'The amount paid for one full day of work.',
+        : type === 'hourly'
+          ? 'The rate paid for one hour of work.'
+          : 'The amount paid for one full day of work.',
   helpUsualQty: 'The amount they usually deliver each day. Pre-fills on Home so marking a normal day is one tap.',
   helpHiredOn: 'The date they started. Attendance and salary only count from this date onward.',
   helpHowLong: 'Ongoing if there’s no fixed end date, or set a duration for a fixed-term job.',
@@ -225,10 +236,12 @@ const en = {
 
   backupGuideTitle: 'Backup & Restore, explained',
   backupGuideBody:
-    'Export saves everything — every worker, every day marked, every advance and payment — into one file, and opens your phone’s share screen so you can send it to yourself (WhatsApp, email, Drive, wherever).\n\nRestore does the opposite: pick a file you exported earlier and it REPLACES everything currently on this phone with it. Use Export regularly as a safety net, and Restore when you\'ve switched phones or reinstalled the app.\n\nFree plan: 2 of these actions a month, export and restore combined. Upgrading removes the limit.',
+    'Export saves everything — every worker, every day marked, every advance and payment — into one file, and opens your phone’s share screen so you can send it to yourself or save it (WhatsApp, email, Drive, "Save to device" — wherever you pick).\n\nRestore does the opposite: pick a file you exported earlier and it REPLACES everything currently on this phone with it. Use Export regularly as a safety net, and Restore when you\'ve switched phones or reinstalled the app.\n\nFree plan: Export is limited to 2 a month. Restore is always free and unlimited — getting your own data back is never behind a limit.',
   backupLimitTitle: 'Free limit reached',
-  backupLimitBody: 'The free plan allows 2 backup actions a month. Upgrade for unlimited backups.',
-  backupUsageHint: (used: number, limit: number) => `${used} of ${limit} used this month`,
+  backupLimitBody: 'The free plan allows 2 exports a month. Upgrade for unlimited exports — Restore is always free.',
+  exportUsageHint: (used: number, limit: number) => `${used} of ${limit} exports used this month`,
+  exportDoneTitle: 'Backup ready',
+  exportDoneBody: (fileName: string) => `Saved as ${fileName}`,
 
   yourProfile: 'Your profile',
   yourProfileHint: 'Your own details — not a worker\'s. Stays on this phone, shows on payslips if filled in.',
@@ -237,6 +250,25 @@ const en = {
   addPhoto: 'Add photo',
   changePhoto: 'Change photo',
   photoPermissionBody: 'GharKhata needs access to your photos to set a picture.',
+  photoErrorBody: 'Could not use that photo. Try a different one.',
+
+  accentColor: 'Accent color',
+  accentBlue: 'Blue',
+  accentViolet: 'Violet',
+  accentRose: 'Rose',
+  accentGold: 'Gold',
+
+  weeklyOffBadge: 'Weekly off (auto-paid)',
+  weeklyOffOverrideHint: 'Already paid in full — no need to mark anything. Only tap Present if they exceptionally worked; it will not add extra pay, it is just for your record.',
+  weeklyOffTapTitle: 'Weekly off — already paid',
+  weeklyOffTapBody: (name: string) => `This is ${name}'s regular day off. It is already counted as a paid day automatically — there is nothing to mark.`,
+
+  devPremiumOnTitle: 'Preview premium?',
+  devPremiumOnBody: 'Turns on every premium feature on this phone for testing, before real payments exist. Turn off any time from the same place.',
+  devPremiumOffTitle: 'Back to free plan?',
+  devPremiumOffBody: 'Turns premium preview off and brings back the free-plan limits.',
+  devPremiumOn: 'Preview on',
+  devPremiumOff: 'Preview off',
 };
 
 type Dict = typeof en;
@@ -330,6 +362,11 @@ const hi: Dict = {
   totalQty: 'कुल',
   daysOf: (a: number, b: number) => `${b} में से ${a} दिन`,
 
+  perHour: 'प्रति घंटा',
+  hourlyRate: 'एक घंटे का रेट',
+  hoursWorked: 'काम के घंटे',
+  helpHoursWorked: 'इस दिन कितने घंटे काम किया। घंटे के हिसाब से तनख्वाह सही जुड़ने के लिए यह ज़रूरी है।',
+
   feedback: 'हमें बेहतर बनाएँ',
   feedbackHint: 'एक चीज़ जो GharKhata को बेहतर बनाए…',
   send: 'भेजें',
@@ -353,13 +390,15 @@ const hi: Dict = {
 
   now: 'अभी',
   withUpgrade: 'अपग्रेड के बाद',
+  onPremiumTitle: 'आप प्रीमियम पर हैं',
+  onPremiumBody: 'असीमित कामगार, पूरा इतिहास, और हर प्रीमियम सुविधा अनलॉक है।',
   freeWorkers: (n: number) => `${n} कामगार`,
-  freeHistory: (n: number) => `${n} महीने का रिकॉर्ड`,
+  freeHistory: (n: number) => `पिछले ${n} महीनों का ही रिकॉर्ड`,
+  freeRestoreLine: 'अपना डेटा कभी भी वापस लाएं, हमेशा मुफ़्त',
   featUnlimited: 'जितने चाहें उतने कामगार जोड़ें',
   featHistory: 'पिछले महीनों का रिकॉर्ड',
-  featBackup: 'रिकॉर्ड का बैकअप और वापस लाना',
-  featBrandedPdf: 'पर्ची पर आपका नाम और हस्ताक्षर',
-  featReminders: 'हाज़िरी लगाने की रोज़ याद',
+  featUnlimitedExport: 'असीमित एक्सपोर्ट',
+  featReminders: 'समय पर तनख्वाह देने की महीने की याद',
   featAppLock: 'ऐप को पिन से लॉक करें',
 
   balanceDue: 'बाकी रकम',
@@ -403,6 +442,8 @@ const hi: Dict = {
   reminderBody: 'हर 15 दिन में डेटा एक्सपोर्ट करने की सूचना।',
   reminderDeniedTitle: 'सूचना बंद है',
   reminderDeniedBody: 'यह याद पाने के लिए फ़ोन की सेटिंग में GharKhata की सूचना चालू करें।',
+  dueReminderTitle: 'तनख्वाह याद',
+  dueReminderBody: 'बकाया रकम देखने और समय पर भुगतान करने के लिए हर महीने एक याद।',
   fine: 'कटौती',
   amount: 'रकम',
   noteOptional: 'नोट (ज़रूरी नहीं)',
@@ -423,14 +464,16 @@ const hi: Dict = {
   helpWork: 'यह क्या काम करते हैं — एक नज़र में पहचानने में मदद करता है।',
   helpPhone: 'व्हाट्सएप पर सीधे पर्ची भेजने के लिए। 10 अंक, ज़रूरी नहीं।',
   helpUpi: 'भुगतान दर्ज करते समय "यूपीआई से भुगतान करें" के लिए इनका यूपीआई आईडी। ज़रूरी नहीं।',
-  helpPayType: 'महीने की तय तनख्वाह, दिन की मज़दूरी, या दूध जैसा प्रति यूनिट रेट।',
+  helpPayType: 'महीने की तय तनख्वाह, दिन की मज़दूरी, घंटे का रेट, या दूध जैसा प्रति यूनिट रेट।',
   helpUnit: 'यह जिस यूनिट में भुगतान पाते हैं — किलो, लीटर, नग वगैरह।',
   helpAmount: (type: SalaryType) =>
     type === 'monthly'
       ? 'हर महीने पूरा काम करने पर मिलने वाली पूरी रकम।'
       : type === 'per_unit'
         ? 'एक यूनिट का रेट — जैसे ₹40 प्रति लीटर।'
-        : 'एक पूरे दिन के काम की रकम।',
+        : type === 'hourly'
+          ? 'एक घंटे के काम का रेट।'
+          : 'एक पूरे दिन के काम की रकम।',
   helpUsualQty: 'रोज़ जितना देते हैं। होम स्क्रीन पर पहले से भरा रहेगा, आम दिन एक टैप में लगेगा।',
   helpHiredOn: 'जिस दिन से शुरू किया। हाज़िरी और तनख्वाह इसी दिन से गिनी जाएगी।',
   helpHowLong: 'कोई तय तारीख नहीं तो लगातार चुनें, वरना समय सीमा तय करें।',
@@ -450,10 +493,12 @@ const hi: Dict = {
 
   backupGuideTitle: 'बैकअप और रीस्टोर — पूरी जानकारी',
   backupGuideBody:
-    'एक्सपोर्ट सब कुछ एक फ़ाइल में सेव करता है — हर कामगार, हर दिन की हाज़िरी, हर एडवांस और भुगतान — और फ़ोन की शेयर स्क्रीन खोल देता है ताकि आप उसे खुद को भेज सकें (व्हाट्सएप, ईमेल, ड्राइव, कहीं भी)।\n\nरीस्टोर उल्टा काम करता है: पहले एक्सपोर्ट की गई फ़ाइल चुनें और यह इस फ़ोन पर मौजूद सब कुछ उससे बदल देगा। सुरक्षा के लिए नियमित रूप से एक्सपोर्ट करें, और फ़ोन बदलने या ऐप फिर से डालने पर रीस्टोर करें।\n\nमुफ़्त प्लान: महीने में 2 बार, एक्सपोर्ट और रीस्टोर मिलाकर। अपग्रेड करने पर कोई सीमा नहीं।',
+    'एक्सपोर्ट सब कुछ एक फ़ाइल में सेव करता है — हर कामगार, हर दिन की हाज़िरी, हर एडवांस और भुगतान — और फ़ोन की शेयर स्क्रीन खोल देता है ताकि आप उसे खुद को भेज सकें या सेव कर सकें (व्हाट्सएप, ईमेल, ड्राइव, "Save to device" — कहीं भी)।\n\nरीस्टोर उल्टा काम करता है: पहले एक्सपोर्ट की गई फ़ाइल चुनें और यह इस फ़ोन पर मौजूद सब कुछ उससे बदल देगा। सुरक्षा के लिए नियमित रूप से एक्सपोर्ट करें, और फ़ोन बदलने या ऐप फिर से डालने पर रीस्टोर करें।\n\nमुफ़्त प्लान: महीने में 2 एक्सपोर्ट। रीस्टोर हमेशा मुफ़्त और बिना सीमा के है — अपना ही डेटा वापस पाना कभी सीमित नहीं होगा।',
   backupLimitTitle: 'मुफ़्त सीमा पूरी',
-  backupLimitBody: 'मुफ़्त प्लान में महीने में 2 बैकअप एक्शन मिलते हैं। बिना सीमा के लिए अपग्रेड करें।',
-  backupUsageHint: (used: number, limit: number) => `${limit} में से ${used} इस्तेमाल`,
+  backupLimitBody: 'मुफ़्त प्लान में महीने में 2 एक्सपोर्ट मिलते हैं। बिना सीमा के लिए अपग्रेड करें — रीस्टोर हमेशा मुफ़्त है।',
+  exportUsageHint: (used: number, limit: number) => `${limit} में से ${used} एक्सपोर्ट इस्तेमाल`,
+  exportDoneTitle: 'बैकअप तैयार',
+  exportDoneBody: (fileName: string) => `${fileName} नाम से सेव किया गया`,
 
   yourProfile: 'आपकी प्रोफ़ाइल',
   yourProfileHint: 'यह आपकी अपनी जानकारी है, किसी कामगार की नहीं। यह सिर्फ़ इस फ़ोन पर रहती है, और भरने पर सैलरी पर्ची में दिखती है।',
@@ -462,6 +507,25 @@ const hi: Dict = {
   addPhoto: 'फ़ोटो जोड़ें',
   changePhoto: 'फ़ोटो बदलें',
   photoPermissionBody: 'फ़ोटो लगाने के लिए GharKhata को आपकी फ़ोटो तक पहुँच चाहिए।',
+  photoErrorBody: 'यह फ़ोटो इस्तेमाल नहीं हो सकी। कोई और फ़ोटो आज़माएं।',
+
+  accentColor: 'रंग चुनें',
+  accentBlue: 'नीला',
+  accentViolet: 'बैंगनी',
+  accentRose: 'गुलाबी',
+  accentGold: 'सुनहरा',
+
+  weeklyOffBadge: 'साप्ताहिक छुट्टी (अपने आप भुगतान)',
+  weeklyOffOverrideHint: 'इसका पूरा भुगतान पहले से तय है — कुछ लगाने की ज़रूरत नहीं। सिर्फ़ तभी "हाज़िर" लगाएं जब आज खास तौर पर काम किया हो — इससे अलग से पैसा नहीं जुड़ेगा, यह सिर्फ़ रिकॉर्ड के लिए है।',
+  weeklyOffTapTitle: 'साप्ताहिक छुट्टी — भुगतान पहले से तय',
+  weeklyOffTapBody: (name: string) => `यह ${name} की तय साप्ताहिक छुट्टी है। इसका भुगतान अपने आप जुड़ जाता है — कुछ लगाने की ज़रूरत नहीं।`,
+
+  devPremiumOnTitle: 'प्रीमियम आज़माएं?',
+  devPremiumOnBody: 'असली भुगतान शुरू होने से पहले, इस फ़ोन पर सभी प्रीमियम सुविधाएं जांचने के लिए चालू करता है। जब चाहें यहीं से बंद कर सकते हैं।',
+  devPremiumOffTitle: 'मुफ़्त प्लान पर वापस जाएं?',
+  devPremiumOffBody: 'प्रीमियम आज़माना बंद करेगा और मुफ़्त प्लान की सीमाएं वापस लौट आएंगी।',
+  devPremiumOn: 'आज़माना चालू',
+  devPremiumOff: 'आज़माना बंद',
 };
 
 const DICTS: Record<Lang, Dict> = { en, hi };
