@@ -256,6 +256,14 @@ export function getAttendanceForPeriod(
   );
 }
 
+/** Every attendance row ever, for a worker — see computeWorkerBalance(). */
+export function getAllAttendance(helperId: number): Attendance[] {
+  return conn().getAllSync<Attendance>(
+    'SELECT * FROM attendance WHERE helper_id = ? ORDER BY date',
+    helperId,
+  );
+}
+
 export function getAttendanceForDate(dateKey: string): Attendance[] {
   return conn().getAllSync<Attendance>(
     'SELECT * FROM attendance WHERE date = ?',

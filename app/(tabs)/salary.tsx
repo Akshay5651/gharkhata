@@ -146,6 +146,20 @@ export default function SalaryScreen() {
     load();
   };
 
+  // Memoized on [historyFor, rows] rather than fetched inline in JSX: `rows`
+  // changing is exactly what load() does after every save/delete, so this
+  // still refreshes whenever the data actually changes, but not on every
+  // unrelated re-render of the screen (a re-query on each keystroke
+  // elsewhere, for two arrays that were 99% of the time unchanged).
+  const historyLedger = useMemo(
+    () => (historyFor ? getAllLedgerEntries(historyFor.id) : []),
+    [historyFor, rows],
+  );
+  const historyPayments = useMemo(
+    () => (historyFor ? getAllPayments(historyFor.id) : []),
+    [historyFor, rows],
+  );
+
   const onDeleteLedger = (id: number) => {
     deleteLedgerEntry(id);
     load();
@@ -349,8 +363,8 @@ export default function SalaryScreen() {
       <HistorySheet
         visible={historyFor != null}
         helper={historyFor}
-        ledger={historyFor ? getAllLedgerEntries(historyFor.id) : []}
-        payments={historyFor ? getAllPayments(historyFor.id) : []}
+        ledger={historyLedger}
+        payments={historyPayments}
         onClose={() => {
           setHistoryFor(null);
           // The card behind the sheet can hold a stale balance visually —
