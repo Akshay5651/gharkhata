@@ -119,9 +119,15 @@ export function computePayroll(
 
     const mark = byDate.get(dateKey);
     if (mark) {
+      // An hourly worker has no meaningful "day rate", so a mark with no
+      // logged hours pays nothing rather than falling back to the 1-day
+      // status weight (which would silently pay for a single hour). Absent
+      // stays 0 even if a stray hours value is sitting on the row.
       const weight =
-        helper.salary_type === 'hourly' && mark.hours_worked != null
-          ? mark.hours_worked
+        helper.salary_type === 'hourly'
+          ? mark.status === 'absent'
+            ? 0
+            : (mark.hours_worked ?? 0)
           : STATUS_WEIGHT[mark.status];
       counts[mark.status] = (counts[mark.status] ?? 0) + 1;
       payableDays += weight;
@@ -135,6 +141,12 @@ export function computePayroll(
         const qty = mark.quantity ?? helper.default_quantity ?? 0;
         totalQuantity += qty * STATUS_WEIGHT[mark.status];
       }
+    } else if (helper.salary_type === 'hourly' && offs.includes(dayOfWeek(dateKey))) {
+      // Still a known, blocked-from-marking off day — just not worth any pay,
+      // since an hourly worker has no "day rate" to auto-credit. Counted so
+      // it doesn't show up as an unmarked/missing day.
+      counts.week_off = (counts.week_off ?? 0) + 1;
+      markedDays += 1;
     } else if (offs.includes(dayOfWeek(dateKey))) {
       // An unmarked weekly off is implied, not missing data.
       counts.week_off = (counts.week_off ?? 0) + 1;

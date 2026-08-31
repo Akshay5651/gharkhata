@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   Image,
+  KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
@@ -222,6 +223,10 @@ export default function WorkerScreen() {
         </Pressable>
       </View>
 
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         <Pressable style={styles.avatarWrap} onPress={onPickPhoto}>
           {photo ? (
@@ -488,6 +493,7 @@ export default function WorkerScreen() {
           </Pressable>
         )}
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

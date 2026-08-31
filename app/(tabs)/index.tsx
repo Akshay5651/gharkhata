@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Image,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -173,6 +175,10 @@ export default function HomeScreen() {
         </Text>
       )}
 
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
       <ScrollView contentContainerStyle={styles.list}>
         {helpers.length === 0 ? (
           <View style={styles.empty}>
@@ -208,7 +214,9 @@ export default function HomeScreen() {
                       ? '/mo'
                       : helper.salary_type === 'per_unit'
                         ? `/${helper.unit_label || t.unit.toLowerCase()}`
-                        : '/day'}
+                        : helper.salary_type === 'hourly'
+                          ? `/${t.perHour.toLowerCase()}`
+                          : '/day'}
                   </Text>
                 </View>
                 <Ionicons
@@ -319,6 +327,7 @@ export default function HomeScreen() {
           </Text>
         )}
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

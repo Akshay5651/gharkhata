@@ -467,8 +467,10 @@ export interface BackupPayload {
   attendance: Attendance[];
   ledgerEntries: LedgerEntry[];
   payments: Payment[];
-  snapshots: SnapshotRow[];
-  settings: SettingRow[];
+  // Optional: a payload missing these (an older or hand-edited export)
+  // still restores everything else instead of failing outright.
+  snapshots?: SnapshotRow[];
+  settings?: SettingRow[];
 }
 
 /** Every row in every table, as plain data — the whole app, in one object. */
@@ -492,6 +494,15 @@ export function exportAllData(): BackupPayload {
  * This is a full replace, not a merge — the confirmation lives in the UI
  * layer, since this function has no way to ask.
  */
+/**
+ * Every nullable/optional column is coerced with `?? null` even though a
+ * same-version export always has it — a backup can be old, hand-edited, or
+ * from a future app version with a field this build doesn't know about, and
+ * SQLite's binder throws on `undefined` (unlike a missing/absent key in the
+ * JSON, which parses to `undefined`, not `null`). Restore is the one
+ * unconditionally-free, no-quota feature in the app specifically so nobody
+ * loses data — it must never crash on a payload that's merely imperfect.
+ */
 export function importAllData(payload: BackupPayload): void {
   const c = conn();
   c.withTransactionSync(() => {
@@ -504,45 +515,48 @@ export function importAllData(payload: BackupPayload): void {
       DELETE FROM app_setting;
     `);
 
-    for (const h of payload.helpers) {
+    for (const h of payload.helpers ?? []) {
       c.runSync(
         `INSERT INTO helper
            (id, name, role, phone, upi_id, photo_uri, salary_paise, salary_type,
             weekly_offs, paid_leaves_per_month, start_date, end_date,
             unit_label, default_quantity, is_active, created_at, archived_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        h.id, h.name, h.role, h.phone, h.upi_id ?? null, h.photo_uri, h.salary_paise,
-        h.salary_type, h.weekly_offs, h.paid_leaves_per_month, h.start_date,
-        h.end_date, h.unit_label, h.default_quantity, h.is_active,
-        h.created_at, h.archived_at,
+        h.id, h.name, h.role ?? '', h.phone ?? null, h.upi_id ?? null,
+        h.photo_uri ?? null, h.salary_paise, h.salary_type ?? 'monthly',
+        h.weekly_offs ?? '', h.paid_leaves_per_month ?? 0, h.start_date,
+        h.end_date ?? null, h.unit_label ?? null, h.default_quantity ?? null,
+        h.is_active ?? 1, h.created_at, h.archived_at ?? null,
       );
     }
-    for (const a of payload.attendance) {
+    for (const a of payload.attendance ?? []) {
       c.runSync(
         `INSERT INTO attendance
            (id, helper_id, date, status, hours_worked, quantity, note, marked_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        a.id, a.helper_id, a.date, a.status, a.hours_worked, a.quantity,
-        a.note, a.marked_at,
+        a.id, a.helper_id, a.date, a.status, a.hours_worked ?? null,
+        a.quantity ?? null, a.note ?? null, a.marked_at,
       );
     }
-    for (const l of payload.ledgerEntries) {
+    for (const l of payload.ledgerEntries ?? []) {
       c.runSync(
         `INSERT INTO ledger_entry
            (id, helper_id, date, type, amount_paise, note, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        l.id, l.helper_id, l.date, l.type, l.amount_paise, l.note, l.created_at,
+        l.id, l.helper_id, l.date, l.type, l.amount_paise, l.note ?? null,
+        l.created_at,
       );
     }
-    for (const p of payload.payments) {
+    for (const p of payload.payments ?? []) {
       c.runSync(
         `INSERT INTO payment
            (id, helper_id, period, paid_on, amount_paise, method, note)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        p.id, p.helper_id, p.period, p.paid_on, p.amount_paise, p.method, p.note,
+        p.id, p.helper_id, p.period, p.paid_on, p.amount_paise,
+        p.method ?? 'cash', p.note ?? null,
       );
     }
-    for (const s of payload.snapshots) {
+    for (const s of payload.snapshots ?? []) {
       c.runSync(
         `INSERT INTO payroll_snapshot
            (id, helper_id, period, computed_json, settled_at)
@@ -550,7 +564,7 @@ export function importAllData(payload: BackupPayload): void {
         s.id, s.helper_id, s.period, s.computed_json, s.settled_at,
       );
     }
-    for (const st of payload.settings) {
+    for (const st of payload.settings ?? []) {
       c.runSync(
         'INSERT INTO app_setting (key, value) VALUES (?, ?)',
         st.key,

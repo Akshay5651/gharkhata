@@ -32,6 +32,9 @@ export function buildPayslipText(
     const unit = helper.unit_label ?? 'unit';
     lines.push(`Rate: ${formatINR(payroll.dayRatePaise)} per ${unit}`);
     lines.push(`Total: ${payroll.totalQuantity} ${unit}`);
+  } else if (helper.salary_type === 'hourly') {
+    lines.push(`Hourly rate: ${formatINR(payroll.dayRatePaise)}`);
+    lines.push(`Hours worked: ${payroll.payableDays}`);
   } else {
     lines.push(`Day rate: ${formatINR(payroll.dayRatePaise)}`);
     lines.push(`Payable days: ${payroll.payableDays}`);

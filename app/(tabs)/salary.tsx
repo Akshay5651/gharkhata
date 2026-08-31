@@ -274,7 +274,9 @@ export default function SalaryScreen() {
             <Text style={styles.rate}>
               {helper.salary_type === 'per_unit'
                 ? `${formatINR(payroll.dayRatePaise)}/${helper.unit_label || t.unit.toLowerCase()} · ${payroll.totalQuantity} ${helper.unit_label ?? ''}`
-                : `${formatINR(payroll.dayRatePaise)}/${t.perDay.toLowerCase()} · ${payroll.payableDays} ${t.payableDays.toLowerCase()}`}
+                : helper.salary_type === 'hourly'
+                  ? `${formatINR(payroll.dayRatePaise)}/${t.perHour.toLowerCase()} · ${payroll.payableDays} ${t.hoursWorked.toLowerCase()}`
+                  : `${formatINR(payroll.dayRatePaise)}/${t.perDay.toLowerCase()} · ${payroll.payableDays} ${t.payableDays.toLowerCase()}`}
             </Text>
             {payroll.isPartialMonth && (
               <Text style={styles.partial}>

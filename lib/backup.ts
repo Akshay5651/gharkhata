@@ -4,6 +4,11 @@ import * as Sharing from 'expo-sharing';
 import { BackupPayload, exportAllData, importAllData } from './db';
 import { todayKey } from './dates';
 
+// snapshots/settings are optional on the payload, but if present must still
+// be arrays — otherwise a malformed value would only fail once import.ts
+// tries to iterate it, deep inside a DB transaction.
+const isArrayOrAbsent = (v: unknown): boolean => v === undefined || Array.isArray(v);
+
 function isBackupPayload(value: unknown): value is BackupPayload {
   if (typeof value !== 'object' || value === null) return false;
   const v = value as Record<string, unknown>;
@@ -12,7 +17,9 @@ function isBackupPayload(value: unknown): value is BackupPayload {
     Array.isArray(v.helpers) &&
     Array.isArray(v.attendance) &&
     Array.isArray(v.ledgerEntries) &&
-    Array.isArray(v.payments)
+    Array.isArray(v.payments) &&
+    isArrayOrAbsent(v.snapshots) &&
+    isArrayOrAbsent(v.settings)
   );
 }
 

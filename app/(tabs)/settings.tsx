@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  KeyboardAvoidingView,
   Linking,
+  Platform,
   Pressable,
   ScrollView,
   Share,
@@ -250,6 +252,10 @@ export default function SettingsScreen() {
         </View>
       </View>
 
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
       <ScrollView contentContainerStyle={styles.body}>
         {isPremium() && (
           <View style={styles.premiumCard}>
@@ -462,6 +468,7 @@ export default function SettingsScreen() {
         </Pressable>
         <Text style={styles.watermark}>Created by Akki · © 2026</Text>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

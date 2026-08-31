@@ -51,6 +51,7 @@ export function buildPayslipHtml(
   payroll: PayrollBreakdown,
 ): string {
   const isPerUnit = helper.salary_type === 'per_unit';
+  const isHourly = helper.salary_type === 'hourly';
   const unit = helper.unit_label ?? 'unit';
 
   const initials = helper.name
@@ -90,8 +91,11 @@ export function buildPayslipHtml(
   const basis = isPerUnit
     ? row(`Rate per ${unit}`, formatINR(payroll.dayRatePaise)) +
       row('Total delivered', `${payroll.totalQuantity} ${unit}`)
-    : row('Day rate', formatINR(payroll.dayRatePaise)) +
-      row('Payable days', String(payroll.payableDays));
+    : isHourly
+      ? row('Hourly rate', formatINR(payroll.dayRatePaise)) +
+        row('Hours worked', String(payroll.payableDays))
+      : row('Day rate', formatINR(payroll.dayRatePaise)) +
+        row('Payable days', String(payroll.payableDays));
 
   return `<!doctype html>
 <html>
