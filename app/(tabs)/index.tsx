@@ -243,11 +243,21 @@ export default function HomeScreen() {
                 />
               </Pressable>
 
-              {!marks[helper.id] && parseWeeklyOffs(helper).includes(dayOfWeek(date)) ? (
-                <Text style={styles.offNote}>{t.weeklyOffBadge}</Text>
-              ) : (
+              {(() => {
+                const isOff = parseWeeklyOffs(helper).includes(dayOfWeek(date));
+                if (isOff && !marks[helper.id]) {
+                  return <Text style={styles.offNote}>{t.weeklyOffBadge}</Text>;
+                }
+                // Half day / Absent both pay less than an untouched weekly
+                // off already does automatically, so once a mark exists on
+                // one, only Present stays a meaningful choice — the others
+                // would just quietly shortchange the worker's off day.
+                const rowOptions = isOff
+                  ? quick.filter((option) => option.status === 'present')
+                  : quick;
+                return (
                 <View style={styles.row}>
-                  {quick.map((option) => {
+                  {rowOptions.map((option) => {
                     const active = marks[helper.id] === option.status;
                     return (
                       <Pressable
@@ -270,7 +280,8 @@ export default function HomeScreen() {
                     );
                   })}
                 </View>
-              )}
+                );
+              })()}
 
               {helper.salary_type === 'per_unit' && marks[helper.id] && (
                 <View style={styles.qtyRow}>

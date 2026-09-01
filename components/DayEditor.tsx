@@ -88,11 +88,18 @@ export default function DayEditor({
   const numericQty = Number(qty) > 0 ? Number(qty) : 0;
   const numericHrs = Number(hrs) > 0 ? Number(hrs) : 0;
 
-  const options: { status: AttendanceStatus; label: string; color: string }[] = [
-    { status: 'present', label: t.present, color: colors.present },
-    { status: 'half_day', label: t.half, color: colors.half },
-    { status: 'absent', label: t.absent, color: colors.absent },
-  ];
+  // Half day / Absent both pay less than an untouched weekly off already
+  // does automatically (a lower status weight than the implicit full
+  // credit), so offering them here would only ever let someone quietly
+  // shortchange a worker's off day. Present is the one override that means
+  // something: they worked a day they didn't have to.
+  const options: { status: AttendanceStatus; label: string; color: string }[] = isWeeklyOff
+    ? [{ status: 'present', label: t.present, color: colors.present }]
+    : [
+        { status: 'present', label: t.present, color: colors.present },
+        { status: 'half_day', label: t.half, color: colors.half },
+        { status: 'absent', label: t.absent, color: colors.absent },
+      ];
 
   const commit = () => {
     onSave(
