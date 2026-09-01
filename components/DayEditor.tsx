@@ -10,6 +10,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AttendanceStatus, Helper } from '@/lib/types';
 import { formatDateKey } from '@/lib/dates';
 import { formatINR } from '@/lib/money';
@@ -55,6 +56,7 @@ export default function DayEditor({
 }: DayEditorProps) {
   const { colors } = useTheme();
   const { t } = useI18n();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [draft, setDraft] = useState<AttendanceStatus | null>(status ?? null);
@@ -109,11 +111,14 @@ export default function DayEditor({
     >
       <Pressable style={styles.backdrop} onPress={onClose}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior="padding"
           style={styles.kav}
         >
           {/* Stops a tap inside the sheet from closing it via the backdrop. */}
-          <Pressable style={styles.sheet} onPress={() => {}}>
+          <Pressable
+            style={[styles.sheet, { paddingBottom: space.xl * 1.5 + insets.bottom }]}
+            onPress={() => {}}
+          >
             <View style={styles.grabber} />
 
           <Text style={styles.date}>{formatDateKey(dateKey)}</Text>

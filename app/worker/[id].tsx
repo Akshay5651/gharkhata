@@ -224,7 +224,7 @@ export default function WorkerScreen() {
       </View>
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior="padding"
         style={{ flex: 1 }}
       >
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">

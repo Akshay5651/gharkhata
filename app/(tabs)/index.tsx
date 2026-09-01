@@ -27,15 +27,16 @@ import { formatINR } from '@/lib/money';
 import { parseWeeklyOffs } from '@/lib/salary';
 import { AttendanceStatus, Helper } from '@/lib/types';
 import { Colors, radius, space, useTheme } from '@/lib/theme';
-import { useI18n } from '@/lib/i18n';
+import { Lang, useI18n } from '@/lib/i18n';
 import GuideSheet from '@/components/GuideSheet';
+import LanguagePickSheet from '@/components/LanguagePickSheet';
 import ProfileButton from '@/components/ProfileButton';
 import ScreenBackdrop from '@/components/ScreenBackdrop';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { colors, mode, toggle } = useTheme();
-  const { t } = useI18n();
+  const { t, setLang } = useI18n();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [helpers, setHelpers] = useState<Helper[]>([]);
@@ -43,6 +44,7 @@ export default function HomeScreen() {
   const [qty, setQty] = useState<Record<number, string>>({});
   const [hrs, setHrs] = useState<Record<number, string>>({});
   const [slots, setSlots] = useState(FREE_HELPER_LIMIT);
+  const [langPickOpen, setLangPickOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const date = todayKey();
 
@@ -83,14 +85,28 @@ export default function HomeScreen() {
 
   useFocusEffect(useCallback(() => load(), [load]));
 
-  // First launch ever, not first focus of this tab — the flag persists in
-  // SQLite, so this fires once per install, not once per app open.
+  // First launch ever, not first focus of this tab — both flags persist in
+  // SQLite, so this fires once per install, not once per app open. Language
+  // comes first: the guide right after it should open in a language the
+  // user can actually read, not whatever the device default landed on.
   useEffect(() => {
-    if (getSetting('guide_shown_once') !== '1') {
+    if (getSetting('language_chosen_once') !== '1') {
+      setLangPickOpen(true);
+    } else if (getSetting('guide_shown_once') !== '1') {
       setSetting('guide_shown_once', '1');
       setGuideOpen(true);
     }
   }, []);
+
+  const onLanguagePicked = (picked: Lang) => {
+    setLang(picked);
+    setSetting('language_chosen_once', '1');
+    setLangPickOpen(false);
+    if (getSetting('guide_shown_once') !== '1') {
+      setSetting('guide_shown_once', '1');
+      setGuideOpen(true);
+    }
+  };
 
   // Tapping the status a worker already has clears it, so a mistap costs one
   // more tap rather than a trip into another screen.
@@ -167,6 +183,7 @@ export default function HomeScreen() {
         </View>
       </View>
 
+      <LanguagePickSheet visible={langPickOpen} onSelect={onLanguagePicked} />
       <GuideSheet visible={guideOpen} onClose={() => setGuideOpen(false)} />
 
       {helpers.length > 0 && (
@@ -176,7 +193,7 @@ export default function HomeScreen() {
       )}
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior="padding"
         style={{ flex: 1 }}
       >
       <ScrollView contentContainerStyle={styles.list}>

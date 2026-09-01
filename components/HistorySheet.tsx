@@ -7,6 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Helper, LedgerEntry, Payment } from '@/lib/types';
 import { formatDateKey } from '@/lib/dates';
@@ -46,6 +47,7 @@ export default function HistorySheet({
 }: HistorySheetProps) {
   const { colors } = useTheme();
   const { t } = useI18n();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   if (!helper) return null;
@@ -107,7 +109,10 @@ export default function HistorySheet({
       onRequestClose={onClose}
     >
       <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={styles.sheet} onPress={() => {}}>
+        <Pressable
+          style={[styles.sheet, { paddingBottom: space.xl + insets.bottom }]}
+          onPress={() => {}}
+        >
           <View style={styles.grabber} />
           <Text style={styles.title}>{t.history}</Text>
           <Text style={styles.who}>{helper.name}</Text>

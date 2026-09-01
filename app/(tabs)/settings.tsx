@@ -30,9 +30,10 @@ import {
   disableExportReminder,
   enableDueReminder,
   enableExportReminder,
+  hasAskedExportReminder,
   isDueReminderEnabled,
   isExportReminderEnabled,
-  maybeAskExportReminder,
+  skipExportReminderAsk,
 } from '@/lib/reminders';
 import { ACCENT_KEYS, ACCENT_SWATCH, AccentKey, Colors, radius, space, ThemeMode, useTheme } from '@/lib/theme';
 import { Lang, LANG_NAMES, useI18n } from '@/lib/i18n';
@@ -98,20 +99,39 @@ export default function SettingsScreen() {
   // every render; this just forces one after a successful export/restore.
   const [, forceRerender] = useState(0);
 
-  // First-ever visit to Settings turns the reminder on by default and asks
-  // for notification permission here, where a screen about data and backups
-  // gives the system prompt context — not on cold boot, which would be a
-  // permission dialog with no explanation in sight.
+  // First-ever visit to Settings makes the case for the reminder in our own
+  // words before ever touching the OS permission dialog — Android denies a
+  // notification prompt shown with zero context far more often than one a
+  // user was already sold on, and it only gets asked once per install
+  // either way, so a "why" has to come first.
   useEffect(() => {
-    maybeAskExportReminder().then(() => setReminderOn(isExportReminderEnabled()));
+    if (hasAskedExportReminder()) return;
+    showAppAlert(t.reminderAskTitle, t.reminderAskBody, [
+      { text: t.notNow, style: 'cancel', onPress: () => skipExportReminderAsk() },
+      {
+        text: t.enable,
+        onPress: async () => {
+          skipExportReminderAsk();
+          const result = await enableExportReminder();
+          setReminderOn(result === 'granted');
+        },
+      },
+    ]);
   }, []);
+
+  const onReminderDenied = () => {
+    showAppAlert(t.reminderDeniedTitle, t.reminderDeniedBody, [
+      { text: t.cancel, style: 'cancel' },
+      { text: t.openSettings, onPress: () => Linking.openSettings() },
+    ]);
+  };
 
   const onToggleReminder = async (value: boolean) => {
     if (value) {
       const result = await enableExportReminder();
       if (result === 'denied') {
         setReminderOn(false);
-        showAppAlert(t.reminderDeniedTitle, t.reminderDeniedBody, [{ text: t.ok }]);
+        onReminderDenied();
         return;
       }
       setReminderOn(true);
@@ -126,7 +146,7 @@ export default function SettingsScreen() {
       const result = await enableDueReminder();
       if (result === 'denied') {
         setDueReminderOn(false);
-        showAppAlert(t.reminderDeniedTitle, t.reminderDeniedBody, [{ text: t.ok }]);
+        onReminderDenied();
         return;
       }
       setDueReminderOn(true);
@@ -253,7 +273,7 @@ export default function SettingsScreen() {
       </View>
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior="padding"
         style={{ flex: 1 }}
       >
       <ScrollView contentContainerStyle={styles.body}>

@@ -10,6 +10,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Helper, Payment } from '@/lib/types';
 import { formatINR, toPaise, toRupees } from '@/lib/money';
@@ -35,6 +36,7 @@ export default function PaymentSheet({
 }: PaymentSheetProps) {
   const { colors } = useTheme();
   const { t } = useI18n();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [amount, setAmount] = useState('');
@@ -107,10 +109,13 @@ export default function PaymentSheet({
     >
       <Pressable style={styles.backdrop} onPress={onClose}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior="padding"
           style={styles.kav}
         >
-          <Pressable style={styles.sheet} onPress={() => {}}>
+          <Pressable
+            style={[styles.sheet, { paddingBottom: space.xl * 1.5 + insets.bottom }]}
+            onPress={() => {}}
+          >
             <View style={styles.grabber} />
             <Text style={styles.title}>{t.recordPayment}</Text>
             <Text style={styles.who}>{helper.name}</Text>

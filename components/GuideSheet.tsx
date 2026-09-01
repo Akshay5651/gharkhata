@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, radius, space, useTheme } from '@/lib/theme';
 import { useI18n } from '@/lib/i18n';
@@ -18,6 +19,7 @@ export interface GuideSheetProps {
 export default function GuideSheet({ visible, onClose }: GuideSheetProps) {
   const { colors } = useTheme();
   const { t } = useI18n();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const steps: { icon: keyof typeof Ionicons.glyphMap; title: string; body: string }[] = [
@@ -37,7 +39,10 @@ export default function GuideSheet({ visible, onClose }: GuideSheetProps) {
       onRequestClose={onClose}
     >
       <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={styles.sheet} onPress={() => {}}>
+        <Pressable
+          style={[styles.sheet, { paddingBottom: space.xl + insets.bottom }]}
+          onPress={() => {}}
+        >
           <View style={styles.grabber} />
           <Text style={styles.title}>{t.guideTitle}</Text>
 

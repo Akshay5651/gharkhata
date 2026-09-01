@@ -10,6 +10,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, radius, space, useTheme } from '@/lib/theme';
@@ -33,6 +34,7 @@ export interface ProfileSheetProps {
 export default function ProfileSheet({ visible, onClose, onSaved }: ProfileSheetProps) {
   const { colors } = useTheme();
   const { t } = useI18n();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [name, setName] = useState('');
@@ -85,10 +87,13 @@ export default function ProfileSheet({ visible, onClose, onSaved }: ProfileSheet
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior="padding"
           style={styles.kav}
         >
-          <Pressable style={styles.sheet} onPress={() => {}}>
+          <Pressable
+            style={[styles.sheet, { paddingBottom: space.xl + insets.bottom }]}
+            onPress={() => {}}
+          >
             <View style={styles.grabber} />
             <Text style={styles.title}>{t.yourProfile}</Text>
             <Text style={styles.hint}>{t.yourProfileHint}</Text>

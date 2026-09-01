@@ -130,14 +130,14 @@ export async function disableExportReminder(): Promise<void> {
 }
 
 /**
- * Runs once ever, the first time Settings is opened — not on cold boot,
- * so the permission prompt appears in a context that explains itself
- * (a screen about data and backups) rather than surprising a first launch.
+ * Marks the first-ever ask as done without touching the OS permission at
+ * all — used when the user declines the in-app "why enable this" prompt, so
+ * Android's own permission dialog (denied at most once before it stops
+ * appearing entirely) is never spent on someone who hasn't been told why
+ * they'd want to say yes.
  */
-export async function maybeAskExportReminder(): Promise<void> {
-  if (hasAskedExportReminder()) return;
+export function skipExportReminderAsk(): void {
   setSetting(ASKED_KEY, '1');
-  await enableExportReminder();
 }
 
 /* ---------- salary due reminder ---------- */

@@ -9,6 +9,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Helper } from '@/lib/types';
 import { toPaise } from '@/lib/money';
 import { Colors, radius, space, useTheme } from '@/lib/theme';
@@ -35,6 +36,7 @@ export default function LedgerEntrySheet({
 }: LedgerEntrySheetProps) {
   const { colors } = useTheme();
   const { t } = useI18n();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [amount, setAmount] = useState('');
@@ -68,10 +70,13 @@ export default function LedgerEntrySheet({
             not get the Activity-level keyboard resize Android normally gives
             a screen — without this the sheet sits under the keyboard. */}
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior="padding"
           style={styles.kav}
         >
-          <Pressable style={styles.sheet} onPress={() => {}}>
+          <Pressable
+            style={[styles.sheet, { paddingBottom: space.xl * 1.5 + insets.bottom }]}
+            onPress={() => {}}
+          >
             <View style={styles.grabber} />
             <Text style={styles.title}>{t.addAdvance}</Text>
             <Text style={styles.who}>{helper.name}</Text>
