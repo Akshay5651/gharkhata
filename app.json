@@ -9,7 +9,7 @@
     "newArchEnabled": true,
     "icon": "./assets/images/icon.png",
     "android": {
-      "package": "com.gharkhata.app",
+      "package": "com.akki5651.gharkhata",
       "minSdkVersion": 24,
       "edgeToEdgeEnabled": true,
       "allowBackup": false,
