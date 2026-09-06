@@ -15,7 +15,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, radius, space, useTheme } from '@/lib/theme';
 import { useI18n } from '@/lib/i18n';
-import { getOwnerProfile, OwnerProfile, saveOwnerProfile } from '@/lib/profile';
+import { getOwnerProfile, OwnerProfile, profileCompletion, saveOwnerProfile } from '@/lib/profile';
 import { savePhoto } from '@/lib/photos';
 import { showAppAlert } from './AppAlertHost';
 import FieldLabel from './FieldLabel';
@@ -83,6 +83,11 @@ export default function ProfileSheet({ visible, onClose, onSaved }: ProfileSheet
     onClose();
   };
 
+  // Live, not just from storage — updates with every keystroke/photo pick
+  // so the percentage actually reflects what's on screen right now.
+  const fraction = profileCompletion({ name, phone, email, photoUri: photo });
+  const percent = Math.round(fraction * 100);
+
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
@@ -97,6 +102,9 @@ export default function ProfileSheet({ visible, onClose, onSaved }: ProfileSheet
             <View style={styles.grabber} />
             <Text style={styles.title}>{t.yourProfile}</Text>
             <Text style={styles.hint}>{t.yourProfileHint}</Text>
+            {fraction < 1 && (
+              <Text style={styles.completeNudge}>{t.profileCompleteNudge(percent)}</Text>
+            )}
 
             <Pressable style={styles.avatarWrap} onPress={onPickPhoto}>
               {photo ? (
@@ -175,6 +183,12 @@ const makeStyles = (colors: Colors) =>
     },
     title: { fontSize: 20, fontWeight: '700', color: colors.text },
     hint: { fontSize: 13, color: colors.muted, marginTop: 4, lineHeight: 18 },
+    completeNudge: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.primary,
+      marginTop: space.xs,
+    },
     avatarWrap: { alignItems: 'center', gap: space.xs, marginTop: space.md },
     avatar: {
       width: 76,

@@ -29,3 +29,10 @@ export function saveOwnerProfile(profile: OwnerProfile): void {
   setSetting('profile_email', profile.email);
   setSetting('profile_photo_uri', profile.photoUri ?? '');
 }
+
+/** Name, phone, email, photo — how much of the owner profile is filled in. */
+export function profileCompletion(profile: OwnerProfile): number {
+  const fields = [profile.name.trim(), profile.phone.trim(), profile.email.trim()];
+  const filled = fields.filter(Boolean).length + (profile.photoUri ? 1 : 0);
+  return filled / 4;
+}

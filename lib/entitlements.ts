@@ -7,6 +7,7 @@ import {
   setSetting,
 } from './db';
 import { currentPeriod, shiftPeriod } from './dates';
+import { Helper } from './types';
 
 /**
  * Every tier gate in the app routes through this file, so switching the app
@@ -103,11 +104,21 @@ export function setPremium(active: boolean): void {
   }
 }
 
-/** How many workers are currently hidden by the free-tier cap. */
-export function tierHiddenCount(): number {
+/**
+ * Workers hidden by the free-tier cap specifically — not archived, so their
+ * dates and rupees are all still there, just not shown on tier-limited
+ * screens until premium comes back (or they're swapped out for someone
+ * else, since only the cap is enforced, not which workers fill it).
+ */
+export function lockedHelpers(): Helper[] {
   return listHelpers(true).filter(
     (h) => h.is_active === 0 && h.archived_at === null,
-  ).length;
+  );
+}
+
+/** How many workers are currently hidden by the free-tier cap. */
+export function tierHiddenCount(): number {
+  return lockedHelpers().length;
 }
 
 /* ---------- backup / restore usage ---------- */
@@ -141,4 +152,16 @@ export function canExport(): boolean {
 export function recordExportUsed(): void {
   if (isPremium()) return;
   setSetting(exportUsageKey(), String(exportActionsUsed() + 1));
+}
+
+/**
+ * There is no backend, so nothing about another person's install can be
+ * reached remotely — this only exists to reset the count on the phone it's
+ * actually called on, for a support conversation walking that person
+ * through doing it themselves (e.g. a mistaken export they were charged a
+ * slot for). Hidden behind a long-press for the same reason the premium
+ * debug toggle is: not something to advertise as a routine bypass.
+ */
+export function resetExportUsage(): void {
+  setSetting(exportUsageKey(), '0');
 }

@@ -51,7 +51,7 @@ export default function LedgerEntrySheet({
   if (!helper) return null;
 
   const rupees = Number(amount);
-  const valid = Number.isFinite(rupees) && rupees > 0;
+  const valid = Number.isFinite(rupees) && rupees > 0 && note.trim() !== '';
 
   const commit = () => {
     if (!valid) return;
@@ -92,10 +92,10 @@ export default function LedgerEntrySheet({
               autoFocus
             />
 
-            <Text style={styles.label}>{t.noteOptional}</Text>
+            <Text style={styles.label}>{t.note}</Text>
             <TextInput
               style={styles.input}
-              placeholder={t.noteOptional}
+              placeholder={t.note}
               placeholderTextColor={colors.muted}
               value={note}
               onChangeText={setNote}

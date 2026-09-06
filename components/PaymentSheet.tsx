@@ -62,11 +62,22 @@ export default function PaymentSheet({
   ];
 
   const rupees = Number(amount);
-  const valid = Number.isFinite(rupees) && rupees > 0;
+  const valid = Number.isFinite(rupees) && rupees > 0 && note.trim() !== '';
 
   const commit = () => {
     if (!valid) return;
-    onSave(toPaise(rupees), method, note.trim() || null);
+    const methodLabel = method === 'upi' ? t.upi : t.cash;
+    showAppAlert(
+      t.confirmPaymentTitle,
+      t.confirmPaymentBody(formatINR(toPaise(rupees)), helper.name, methodLabel),
+      [
+        { text: t.cancel, style: 'cancel' },
+        {
+          text: t.recordPayment,
+          onPress: () => onSave(toPaise(rupees), method, note.trim() || null),
+        },
+      ],
+    );
   };
 
   /**
@@ -163,10 +174,10 @@ export default function PaymentSheet({
               </Pressable>
             )}
 
-            <Text style={styles.label}>{t.noteOptional}</Text>
+            <Text style={styles.label}>{t.note}</Text>
             <TextInput
               style={styles.input}
-              placeholder={t.noteOptional}
+              placeholder={t.note}
               placeholderTextColor={colors.muted}
               value={note}
               onChangeText={setNote}

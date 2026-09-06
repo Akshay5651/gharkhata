@@ -97,7 +97,14 @@ export default function DayEditor({
     ? [{ status: 'present', label: t.present, color: colors.present }]
     : [
         { status: 'present', label: t.present, color: colors.present },
-        { status: 'half_day', label: t.half, color: colors.half },
+        // A per-unit worker's actual amount comes from the quantity typed
+        // below, not the status weight — "half day" would just quietly
+        // halve that quantity's pay a second time, which is redundant with
+        // (and more confusing than) just typing a smaller quantity. They're
+        // either present with some delivery, or absent with none.
+        ...(isPerUnit
+          ? []
+          : [{ status: 'half_day' as const, label: t.half, color: colors.half }]),
         { status: 'absent', label: t.absent, color: colors.absent },
       ];
 

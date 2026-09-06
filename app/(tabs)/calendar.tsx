@@ -7,15 +7,16 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import {
   clearAttendance,
   getAttendanceForPeriod,
   listHelpers,
   markAttendance,
 } from '@/lib/db';
-import { canViewPeriod } from '@/lib/entitlements';
+import { canViewPeriod, lockedHelpers } from '@/lib/entitlements';
 import { parseWeeklyOffs } from '@/lib/salary';
 import {
   currentPeriod,
@@ -40,11 +41,13 @@ const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const LEGEND: AttendanceStatus[] = ['present', 'half_day', 'absent'];
 
 export default function CalendarScreen() {
+  const router = useRouter();
   const { colors } = useTheme();
   const { t } = useI18n();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [helpers, setHelpers] = useState<Helper[]>([]);
+  const [locked, setLocked] = useState<Helper[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [period, setPeriod] = useState(currentPeriod());
   const [marks, setMarks] = useState<Record<string, AttendanceStatus>>({});
@@ -113,9 +116,17 @@ export default function CalendarScreen() {
     return out;
   }, [helpers, period, today, marks]);
 
+  const onTapLocked = (helper: Helper) => {
+    showAppAlert(t.lockedWorkerTitle, t.lockedWorkerBody(helper.name), [
+      { text: t.cancel, style: 'cancel' },
+      { text: t.upgrade, onPress: () => router.push('/(tabs)/settings') },
+    ]);
+  };
+
   const load = useCallback(() => {
     const list = listHelpers();
     setHelpers(list);
+    setLocked(lockedHelpers());
     const active =
       list.find((h) => h.id === selectedId) ?? (list.length > 0 ? list[0] : null);
     setSelectedId(active?.id ?? null);
@@ -227,13 +238,23 @@ export default function CalendarScreen() {
         </View>
       </View>
 
-      {helpers.length > 1 && (
+      {(helpers.length > 1 || locked.length > 0) && (
         <View style={styles.tabsWrap}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.tabs}
           >
+            {locked.map((helper) => (
+              <Pressable
+                key={`locked-${helper.id}`}
+                onPress={() => onTapLocked(helper)}
+                style={[styles.tab, styles.tabLocked]}
+              >
+                <Ionicons name="lock-closed" size={12} color={colors.muted} />
+                <Text style={styles.tabText}>{helper.name}</Text>
+              </Pressable>
+            ))}
             {helpers.map((helper) => {
               const active = selectedId === helper.id;
               const stat = stats[helper.id];
@@ -408,6 +429,12 @@ const makeStyles = (colors: Colors) =>
       overflow: 'hidden',
     },
     tabActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+    tabLocked: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      opacity: 0.6,
+    },
     // Faded, not full-strength, so the photo is still recognizable behind
     // the name — a photo alone would either wash out the text or hide the
     // face, so the image itself is dimmed rather than fully covered.

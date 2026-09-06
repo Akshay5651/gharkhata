@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import {
   Image,
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,13 +11,12 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { archiveHelper, createHelper, getHelper, updateHelper } from '@/lib/db';
 import { canAddHelper } from '@/lib/entitlements';
-import { engagementEndDate } from '@/lib/salary';
-import { formatDateKey, fromDateKey, toDateKey, todayKey } from '@/lib/dates';
+import { engagementEndDate, parseWeeklyOffs } from '@/lib/salary';
+import { formatDateKey, todayKey } from '@/lib/dates';
 import { toPaise, toRupees } from '@/lib/money';
 import { savePhoto } from '@/lib/photos';
 import { SalaryType } from '@/lib/types';
@@ -27,6 +25,7 @@ import { useI18n } from '@/lib/i18n';
 import FieldLabel from '@/components/FieldLabel';
 import { showAppAlert } from '@/components/AppAlertHost';
 import MoneyInput from '@/components/MoneyInput';
+import DatePickerSheet from '@/components/DatePickerSheet';
 
 type Term = 'ongoing' | 'days' | 'months';
 
@@ -34,17 +33,10 @@ type Term = 'ongoing' | 'days' | 'months';
 const QUANTITY_PRESETS = [0.25, 0.5, 0.75, 1, 1.5, 2, 2.5, 3, 4, 5];
 
 /** Common units for what a household pays by delivery rather than by day. */
-const UNIT_PRESETS = ['kg', 'litre', 'piece', 'dozen', 'packet'];
+const UNIT_PRESETS = ['kg', 'litre', 'piece'];
 
 /** 0 = Sunday, matching JS Date#getDay() and how weekly_offs is stored. */
 const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-
-function parseWeeklyOffsCsv(csv: string): number[] {
-  return csv
-    .split(',')
-    .map((s) => Number(s.trim()))
-    .filter((n) => Number.isInteger(n) && n >= 0 && n <= 6);
-}
 
 export default function WorkerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -74,7 +66,7 @@ export default function WorkerScreen() {
     existing?.default_quantity != null ? String(existing.default_quantity) : '',
   );
   const [weeklyOffs, setWeeklyOffs] = useState<number[]>(
-    existing ? parseWeeklyOffsCsv(existing.weekly_offs) : [],
+    existing ? parseWeeklyOffs(existing) : [],
   );
 
   const toggleWeeklyOff = (day: number) => {
@@ -117,7 +109,10 @@ export default function WorkerScreen() {
 
   const applyRolePreset = (preset: (typeof rolePresets)[number]) => {
     setRole(preset.label);
-    if (preset.salaryType) setSalaryType(preset.salaryType);
+    // Every preset sets an explicit pay type, not just milkman/labour —
+    // otherwise switching from Milkman to Maid would silently leave the
+    // form on "Per unit" from the previous pick.
+    setSalaryType(preset.salaryType ?? 'monthly');
     if (preset.unit && !unitLabel) setUnitLabel(preset.unit);
   };
 
@@ -141,10 +136,6 @@ export default function WorkerScreen() {
     }
   };
 
-  const onPickDate = (_: unknown, picked?: Date) => {
-    setShowPicker(Platform.OS === 'ios');
-    if (picked) setStartDate(toDateKey(picked));
-  };
 
   const salaryLabel =
     salaryType === 'monthly'
@@ -279,27 +270,6 @@ export default function WorkerScreen() {
           onChangeText={setRole}
         />
 
-        <FieldLabel text={t.phone} help={t.helpPhone} />
-        <TextInput
-          style={styles.input}
-          placeholder={t.phoneHint}
-          placeholderTextColor={colors.muted}
-          keyboardType="number-pad"
-          maxLength={10}
-          value={phone}
-          onChangeText={(text) => setPhone(text.replace(/\D/g, '').slice(0, 10))}
-        />
-
-        <FieldLabel text={t.upiIdLabel} help={t.helpUpi} />
-        <TextInput
-          style={styles.input}
-          placeholder={t.upiIdHint}
-          placeholderTextColor={colors.muted}
-          autoCapitalize="none"
-          value={upiId}
-          onChangeText={setUpiId}
-        />
-
         <FieldLabel text={t.payType} required help={t.helpPayType} />
         <View style={styles.segment}>
           {(
@@ -420,14 +390,14 @@ export default function WorkerScreen() {
         <Pressable style={styles.input} onPress={() => setShowPicker(true)}>
           <Text style={styles.dateText}>{formatDateKey(startDate)}</Text>
         </Pressable>
-        {showPicker && (
-          <DateTimePicker
-            value={fromDateKey(startDate)}
-            mode="date"
-            maximumDate={new Date()}
-            onChange={onPickDate}
-          />
-        )}
+        <DatePickerSheet
+          visible={showPicker}
+          value={startDate}
+          maxDate={todayKey()}
+          title={t.hiredOn}
+          onClose={() => setShowPicker(false)}
+          onSelect={setStartDate}
+        />
 
         <FieldLabel text={t.howLong} help={t.helpHowLong} />
         <View style={styles.segment}>
@@ -482,6 +452,27 @@ export default function WorkerScreen() {
             )}
           </>
         )}
+
+        <FieldLabel text={t.phone} help={t.helpPhone} />
+        <TextInput
+          style={styles.input}
+          placeholder={t.phoneHint}
+          placeholderTextColor={colors.muted}
+          keyboardType="number-pad"
+          maxLength={10}
+          value={phone}
+          onChangeText={(text) => setPhone(text.replace(/\D/g, '').slice(0, 10))}
+        />
+
+        <FieldLabel text={t.upiIdLabel} help={t.helpUpi} />
+        <TextInput
+          style={styles.input}
+          placeholder={t.upiIdHint}
+          placeholderTextColor={colors.muted}
+          autoCapitalize="none"
+          value={upiId}
+          onChangeText={setUpiId}
+        />
 
         <Pressable style={styles.saveBtn} onPress={onSave}>
           <Text style={styles.saveText}>{t.save}</Text>

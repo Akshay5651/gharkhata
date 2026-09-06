@@ -86,6 +86,10 @@ const en = {
   freePlan: 'Free plan',
   slotsUsed: (a: number, b: number) => `${a} of ${b} workers used`,
   limitReached: 'Limit reached',
+  lockedBadge: 'Locked',
+  lockedWorkerTitle: 'Locked on Free plan',
+  lockedWorkerBody: (name: string) =>
+    `${name} is above your Free plan's 2-worker limit. Nothing about them is lost — upgrade to unlock, or remove another worker to make room.`,
   olderMonths: 'Older months',
   olderMonthsBody: 'The free plan shows 2 months. Older records are still saved.',
   futureDay: 'Not yet',
@@ -195,6 +199,7 @@ const en = {
   fine: 'Fine',
   amount: 'Amount',
   noteOptional: 'Note (optional)',
+  note: 'Note',
   method: 'Method',
   cash: 'Cash',
   upi: 'UPI',
@@ -230,6 +235,9 @@ const en = {
 
   notStarted: 'Not started',
   payingNow: 'Paying now',
+  confirmPaymentTitle: 'Confirm payment',
+  confirmPaymentBody: (amount: string, name: string, method: string) =>
+    `Record ${amount} paid to ${name} via ${method}? This can't be edited afterward — only deleted and re-added.`,
   payViaUpi: 'Pay via UPI',
   noUpiTitle: 'No UPI ID saved',
   noUpiBody: 'Add this worker’s UPI ID from Edit worker to use this shortcut.',
@@ -251,6 +259,7 @@ const en = {
 
   yourProfile: 'Your profile',
   yourProfileHint: 'Your own details — not a worker\'s. Stays on this phone, shows on payslips if filled in.',
+  profileCompleteNudge: (percent: number) => `Please complete your profile — ${percent}% done`,
   emailLabel: 'Email',
   emailHint: 'Optional',
   addPhoto: 'Add photo',
@@ -269,12 +278,11 @@ const en = {
   weeklyOffTapTitle: 'Weekly off — already paid',
   weeklyOffTapBody: (name: string) => `This is ${name}'s regular day off. It is already counted as a paid day automatically — there is nothing to mark.`,
 
-  devPremiumOnTitle: 'Preview premium?',
-  devPremiumOnBody: 'Turns on every premium feature on this phone for testing, before real payments exist. Turn off any time from the same place.',
-  devPremiumOffTitle: 'Back to free plan?',
-  devPremiumOffBody: 'Turns premium preview off and brings back the free-plan limits.',
-  devPremiumOn: 'Preview on',
-  devPremiumOff: 'Preview off',
+  devMenuTitle: 'Developer options',
+  devMenuBody: 'Hidden tools for testing and support — not real features, not shown anywhere else.',
+  devPremiumOn: 'Preview premium on',
+  devPremiumOff: 'Preview premium off',
+  resetExportTitle: 'Reset export count',
 };
 
 type Dict = typeof en;
@@ -349,6 +357,10 @@ const hi: Dict = {
   freePlan: 'मुफ़्त प्लान',
   slotsUsed: (a: number, b: number) => `${b} में से ${a} कामगार`,
   limitReached: 'सीमा पूरी',
+  lockedBadge: 'लॉक्ड',
+  lockedWorkerTitle: 'मुफ़्त प्लान में लॉक है',
+  lockedWorkerBody: (name: string) =>
+    `${name} आपके मुफ़्त प्लान की 2-कामगार सीमा से ऊपर है। कुछ भी खोया नहीं है — अनलॉक करने के लिए अपग्रेड करें, या जगह बनाने के लिए किसी और कामगार को हटाएं।`,
   olderMonths: 'पुराने महीने',
   olderMonthsBody: 'मुफ़्त प्लान में 2 महीने दिखते हैं। पुराना रिकॉर्ड सुरक्षित है।',
   futureDay: 'अभी नहीं',
@@ -458,6 +470,7 @@ const hi: Dict = {
   fine: 'कटौती',
   amount: 'रकम',
   noteOptional: 'नोट (ज़रूरी नहीं)',
+  note: 'नोट',
   method: 'तरीका',
   cash: 'नकद',
   upi: 'यूपीआई',
@@ -493,6 +506,9 @@ const hi: Dict = {
 
   notStarted: 'अभी शुरू नहीं हुआ',
   payingNow: 'अभी कितना दे रहे हैं',
+  confirmPaymentTitle: 'भुगतान की पुष्टि करें',
+  confirmPaymentBody: (amount: string, name: string, method: string) =>
+    `${name} को ${method} से ${amount} भुगतान दर्ज करें? बाद में इसे बदला नहीं जा सकता — सिर्फ़ हटाकर दोबारा जोड़ा जा सकता है।`,
   payViaUpi: 'यूपीआई से भुगतान करें',
   noUpiTitle: 'यूपीआई आईडी नहीं है',
   noUpiBody: 'यह शॉर्टकट इस्तेमाल करने के लिए Edit worker से यूपीआई आईडी जोड़ें।',
@@ -514,6 +530,7 @@ const hi: Dict = {
 
   yourProfile: 'आपकी प्रोफ़ाइल',
   yourProfileHint: 'यह आपकी अपनी जानकारी है, किसी कामगार की नहीं। यह सिर्फ़ इस फ़ोन पर रहती है, और भरने पर सैलरी पर्ची में दिखती है।',
+  profileCompleteNudge: (percent: number) => `कृपया अपनी प्रोफ़ाइल पूरी करें — ${percent}% पूरी हुई`,
   emailLabel: 'ईमेल',
   emailHint: 'ज़रूरी नहीं',
   addPhoto: 'फ़ोटो जोड़ें',
@@ -532,12 +549,11 @@ const hi: Dict = {
   weeklyOffTapTitle: 'साप्ताहिक छुट्टी — भुगतान पहले से तय',
   weeklyOffTapBody: (name: string) => `यह ${name} की तय साप्ताहिक छुट्टी है। इसका भुगतान अपने आप जुड़ जाता है — कुछ लगाने की ज़रूरत नहीं।`,
 
-  devPremiumOnTitle: 'प्रीमियम आज़माएं?',
-  devPremiumOnBody: 'असली भुगतान शुरू होने से पहले, इस फ़ोन पर सभी प्रीमियम सुविधाएं जांचने के लिए चालू करता है। जब चाहें यहीं से बंद कर सकते हैं।',
-  devPremiumOffTitle: 'मुफ़्त प्लान पर वापस जाएं?',
-  devPremiumOffBody: 'प्रीमियम आज़माना बंद करेगा और मुफ़्त प्लान की सीमाएं वापस लौट आएंगी।',
-  devPremiumOn: 'आज़माना चालू',
-  devPremiumOff: 'आज़माना बंद',
+  devMenuTitle: 'डेवलपर विकल्प',
+  devMenuBody: 'टेस्टिंग और सहायता के लिए छुपे हुए टूल — असली सुविधाएं नहीं, कहीं और नहीं दिखते।',
+  devPremiumOn: 'प्रीमियम आज़माना चालू',
+  devPremiumOff: 'प्रीमियम आज़माना बंद',
+  resetExportTitle: 'एक्सपोर्ट गिनती रीसेट करें',
 };
 
 const DICTS: Record<Lang, Dict> = { en, hi };

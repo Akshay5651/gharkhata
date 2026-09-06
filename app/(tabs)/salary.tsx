@@ -225,7 +225,9 @@ export default function SalaryScreen() {
                 <Text
                   style={[
                     styles.balanceValue,
-                    balance.balancePaise <= 0 && styles.balanceSettled,
+                    balance.balancePaise > 0
+                      ? styles.balanceOwed
+                      : styles.balanceSettled,
                   ]}
                 >
                   {balance.balancePaise > 0
@@ -423,7 +425,11 @@ const makeStyles = (colors: Colors) =>
     balanceTap: { flexShrink: 1 },
     balanceLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
     balanceLabel: { fontSize: 11, color: colors.muted, textTransform: 'uppercase', letterSpacing: 0.4 },
-    balanceValue: { fontSize: 20, fontWeight: '700', color: colors.text, marginTop: 2 },
+    balanceValue: { fontSize: 24, fontWeight: '800', color: colors.text, marginTop: 2 },
+    // Money actually owed is the one number on this card worth a household
+    // acting on, so it gets the same visual weight as "Net payable" below —
+    // an urgent color, not the plain body text color everything else uses.
+    balanceOwed: { color: colors.absent },
     balanceSettled: { color: colors.present },
     balanceActions: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
     iconBtn: {

@@ -21,13 +21,19 @@ import {
   markAttendance,
   setSetting,
 } from '@/lib/db';
-import { FREE_HELPER_LIMIT, isPremium, remainingHelperSlots } from '@/lib/entitlements';
+import {
+  FREE_HELPER_LIMIT,
+  isPremium,
+  lockedHelpers,
+  remainingHelperSlots,
+} from '@/lib/entitlements';
 import { dayOfWeek, formatDateKey, todayKey } from '@/lib/dates';
 import { formatINR } from '@/lib/money';
 import { parseWeeklyOffs } from '@/lib/salary';
 import { AttendanceStatus, Helper } from '@/lib/types';
 import { Colors, radius, space, useTheme } from '@/lib/theme';
 import { Lang, useI18n } from '@/lib/i18n';
+import { showAppAlert } from '@/components/AppAlertHost';
 import GuideSheet from '@/components/GuideSheet';
 import LanguagePickSheet from '@/components/LanguagePickSheet';
 import ProfileButton from '@/components/ProfileButton';
@@ -40,6 +46,7 @@ export default function HomeScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [helpers, setHelpers] = useState<Helper[]>([]);
+  const [lockedWorkers, setLockedWorkers] = useState<Helper[]>([]);
   const [marks, setMarks] = useState<Record<number, AttendanceStatus>>({});
   const [qty, setQty] = useState<Record<number, string>>({});
   const [hrs, setHrs] = useState<Record<number, string>>({});
@@ -59,6 +66,7 @@ export default function HomeScreen() {
 
   const load = useCallback(() => {
     setHelpers(listHelpers());
+    setLockedWorkers(lockedHelpers());
     setSlots(remainingHelperSlots());
     const today = getAttendanceForDate(date);
     setMarks(
@@ -131,6 +139,13 @@ export default function HomeScreen() {
       markAttendance(helper.id, date, status, { quantity, hours });
     }
     load();
+  };
+
+  const onTapLocked = (helper: Helper) => {
+    showAppAlert(t.lockedWorkerTitle, t.lockedWorkerBody(helper.name), [
+      { text: t.cancel, style: 'cancel' },
+      { text: t.upgrade, onPress: () => router.push('/(tabs)/settings') },
+    ]);
   };
 
   const onQtyChange = (helper: Helper, text: string) => {
@@ -252,9 +267,15 @@ export default function HomeScreen() {
                 // off already does automatically, so once a mark exists on
                 // one, only Present stays a meaningful choice — the others
                 // would just quietly shortchange the worker's off day.
+                // A per-unit worker's pay comes from the quantity typed
+                // below, so "half day" would just redundantly halve that a
+                // second time — they're either present with a delivery, or
+                // absent with none.
                 const rowOptions = isOff
                   ? quick.filter((option) => option.status === 'present')
-                  : quick;
+                  : helper.salary_type === 'per_unit'
+                    ? quick.filter((option) => option.status !== 'half_day')
+                    : quick;
                 return (
                 <View style={styles.row}>
                   {rowOptions.map((option) => {
@@ -331,6 +352,32 @@ export default function HomeScreen() {
             </View>
           ))
         )}
+
+        {lockedWorkers.map((helper) => (
+          <Pressable
+            key={helper.id}
+            style={styles.lockedCard}
+            onPress={() => onTapLocked(helper)}
+          >
+            <View style={[styles.avatar, styles.avatarLocked]}>
+              {helper.photo_uri ? (
+                <Image source={{ uri: helper.photo_uri }} style={styles.avatarImg} />
+              ) : (
+                <Text style={styles.avatarInitial}>
+                  {helper.name.trim().charAt(0).toUpperCase()}
+                </Text>
+              )}
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.lockedName}>{helper.name}</Text>
+              <Text style={styles.lockedRole}>{helper.role || t.worker}</Text>
+            </View>
+            <View style={styles.lockedBadge}>
+              <Ionicons name="lock-closed" size={12} color={colors.muted} />
+              <Text style={styles.lockedBadgeText}>{t.lockedBadge}</Text>
+            </View>
+          </Pressable>
+        ))}
 
         <Pressable
           style={[styles.addRow, locked && styles.addRowLocked]}
@@ -468,6 +515,30 @@ const makeStyles = (colors: Colors) =>
       textAlign: 'center',
       paddingHorizontal: space.xl,
     },
+    lockedCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.sm,
+      backgroundColor: colors.surface,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: space.md,
+      opacity: 0.6,
+    },
+    avatarLocked: { opacity: 0.7 },
+    lockedName: { fontSize: 15, fontWeight: '600', color: colors.text },
+    lockedRole: { fontSize: 12, color: colors.muted, marginTop: 2 },
+    lockedBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: space.sm,
+      paddingVertical: 4,
+      borderRadius: radius.pill,
+      backgroundColor: colors.surfaceAlt,
+    },
+    lockedBadgeText: { fontSize: 11, fontWeight: '600', color: colors.muted },
     addRow: {
       flexDirection: 'row',
       alignItems: 'center',

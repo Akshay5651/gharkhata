@@ -3,9 +3,11 @@ import {
   ReactNode,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from 'react';
+import { Appearance } from 'react-native';
 import { getSetting, setSetting } from './db';
 
 export type ThemeMode = 'dark' | 'light';
@@ -146,6 +148,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     () => setMode(mode === 'dark' ? 'light' : 'dark'),
     [mode, setMode],
   );
+
+  // Native components we don't render ourselves — the Android date picker
+  // dialog chief among them — follow the OS's own light/dark setting by
+  // default, not our in-app toggle, so without this a phone set to light
+  // mode shows a light-themed picker even while the rest of the app is
+  // dark. Forcing the app's own color scheme keeps every native dialog in
+  // sync with whatever mode the user actually picked in Settings.
+  useEffect(() => {
+    Appearance.setColorScheme(mode);
+  }, [mode]);
 
   const value = useMemo<ThemeValue>(() => {
     const base = mode === 'dark' ? dark : light;

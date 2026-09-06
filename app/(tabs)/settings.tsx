@@ -22,6 +22,7 @@ import {
   FREE_HISTORY_MONTHS,
   isPremium,
   recordExportUsed,
+  resetExportUsage,
   setPremium,
 } from '@/lib/entitlements';
 import { exportBackupFile, importBackupFile } from '@/lib/backup';
@@ -181,25 +182,36 @@ export default function SettingsScreen() {
     showAppAlert(t.comingSoon, t.comingSoonBody, [{ text: t.ok }]);
   };
 
-  // Hidden behind a long-press on the version footer, not a real purchase —
-  // there is no billing yet, so this exists purely to test premium-gated
-  // screens before that exists. Never surfaced as an actual upgrade path.
+  // Everything here is hidden behind a long-press on the version footer —
+  // tiny gray text at the very bottom of the screen, not next to any real
+  // button a curious tap would land on. Both actions are support/testing
+  // tools, not customer-facing features: premium preview exists purely to
+  // test gated screens before real billing exists, and the export reset
+  // only matters for walking a specific person through fixing a mistaken
+  // export during a support conversation — there is no backend to reach
+  // their install remotely, so it can only ever be done on their own phone.
+  // Keeping both behind this one obscure entry point, instead of surfacing
+  // the export reset next to the visible "X of 2 exports used" line where
+  // ordinary exploration could trip over it, is the whole point.
   const onLongPressVersion = () => {
     const goingPremium = !isPremium();
-    showAppAlert(
-      goingPremium ? t.devPremiumOnTitle : t.devPremiumOffTitle,
-      goingPremium ? t.devPremiumOnBody : t.devPremiumOffBody,
-      [
-        { text: t.cancel, style: 'cancel' },
-        {
-          text: goingPremium ? t.devPremiumOn : t.devPremiumOff,
-          onPress: () => {
-            setPremium(goingPremium);
-            forceRerender((n) => n + 1);
-          },
+    showAppAlert(t.devMenuTitle, t.devMenuBody, [
+      { text: t.cancel, style: 'cancel' },
+      {
+        text: goingPremium ? t.devPremiumOn : t.devPremiumOff,
+        onPress: () => {
+          setPremium(goingPremium);
+          forceRerender((n) => n + 1);
         },
-      ],
-    );
+      },
+      {
+        text: t.resetExportTitle,
+        onPress: () => {
+          resetExportUsage();
+          forceRerender((n) => n + 1);
+        },
+      },
+    ]);
   };
 
   const onExport = async () => {
@@ -214,6 +226,15 @@ export default function SettingsScreen() {
     try {
       const outcome = await exportBackupFile();
       if (outcome.status === 'saved') {
+        // Android's share sheet gives no signal for what happens after a
+        // target app is picked — not sent, not saved, nothing — so a
+        // confirmation dialog asking the user to self-report was tried and
+        // dropped: it's disconnected from reality either way (a "No" can't
+        // undo a file that already saved, a "Yes" can't catch one that
+        // silently failed) and just invites gaming the quota. Counting the
+        // attempt itself is the only thing the app can actually know, and
+        // matches how this limit is described everywhere else — a soft
+        // nudge toward premium, not a precise meter.
         recordExportUsed();
         forceRerender((n) => n + 1);
         showAppAlert(t.exportDoneTitle, t.exportDoneBody(outcome.fileName), [

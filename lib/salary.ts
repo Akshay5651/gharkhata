@@ -64,7 +64,13 @@ export function dayRatePaise(helper: Helper): number {
 export function parseWeeklyOffs(helper: Helper): number[] {
   return helper.weekly_offs
     .split(',')
-    .map((s) => Number(s.trim()))
+    .map((s) => s.trim())
+    // An empty segment (e.g. the whole string is '' for a worker with no
+    // weekly off) must not reach Number() — Number('') is 0, not NaN, so
+    // it would otherwise parse as a real Sunday-off and silently block
+    // attendance for every worker who never picked a weekly off at all.
+    .filter((s) => s !== '')
+    .map((s) => Number(s))
     .filter((n) => Number.isInteger(n) && n >= 0 && n <= 6);
 }
 
