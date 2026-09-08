@@ -26,6 +26,7 @@ import FieldLabel from '@/components/FieldLabel';
 import { showAppAlert } from '@/components/AppAlertHost';
 import MoneyInput from '@/components/MoneyInput';
 import DatePickerSheet from '@/components/DatePickerSheet';
+import RolePickerSheet from '@/components/RolePickerSheet';
 
 type Term = 'ongoing' | 'days' | 'months';
 
@@ -61,6 +62,7 @@ export default function WorkerScreen() {
   );
   const [startDate, setStartDate] = useState(existing?.start_date ?? todayKey());
   const [showPicker, setShowPicker] = useState(false);
+  const [showRolePicker, setShowRolePicker] = useState(false);
   const [unitLabel, setUnitLabel] = useState(existing?.unit_label ?? '');
   const [defaultQty, setDefaultQty] = useState(
     existing?.default_quantity != null ? String(existing.default_quantity) : '',
@@ -95,17 +97,28 @@ export default function WorkerScreen() {
    * switches the pay type and unit. Everything stays editable afterwards —
    * the preset is a head start, not a lock.
    */
-  const rolePresets: { label: string; salaryType?: SalaryType; unit?: string }[] = [
-    { label: t.roleMaid },
-    { label: t.roleCook },
-    { label: t.roleMilkman, salaryType: 'per_unit', unit: 'litre' },
-    { label: t.roleDriver },
-    { label: t.roleNanny },
-    { label: t.roleGardener },
-    { label: t.roleGuard },
-    { label: t.roleSweeper },
-    { label: t.roleLabour, salaryType: 'daily' },
+  const rolePresets: {
+    label: string;
+    salaryType?: SalaryType;
+    unit?: string;
+    icon: keyof typeof Ionicons.glyphMap;
+  }[] = [
+    { label: t.roleMaid, icon: 'home-outline' },
+    { label: t.roleCook, icon: 'restaurant-outline' },
+    { label: t.roleMilkman, salaryType: 'per_unit', unit: 'litre', icon: 'water-outline' },
+    { label: t.roleDriver, icon: 'car-outline' },
+    { label: t.roleNanny, icon: 'happy-outline' },
+    { label: t.roleGardener, icon: 'leaf-outline' },
+    { label: t.roleGuard, icon: 'shield-checkmark-outline' },
+    { label: t.roleSweeper, icon: 'brush-outline' },
+    { label: t.roleLabour, salaryType: 'daily', icon: 'hammer-outline' },
   ];
+
+  // Matched by label, not by a stored preset id — free-typed roles have no
+  // preset to match, and the field just falls back to a generic person icon.
+  const selectedRolePreset = rolePresets.find(
+    (p) => p.label.toLowerCase() === role.trim().toLowerCase(),
+  );
 
   const applyRolePreset = (preset: (typeof rolePresets)[number]) => {
     setRole(preset.label);
@@ -150,6 +163,10 @@ export default function WorkerScreen() {
     const rupees = Number(salary);
     if (!name.trim()) {
       showAppAlert(t.name, t.nameRequiredBody, [{ text: t.ok }]);
+      return;
+    }
+    if (!role.trim()) {
+      showAppAlert(t.work, t.workRequiredBody, [{ text: t.ok }]);
       return;
     }
     if (!Number.isFinite(rupees) || rupees <= 0) {
@@ -239,45 +256,62 @@ export default function WorkerScreen() {
           onChangeText={setName}
         />
 
-        <FieldLabel text={t.work} help={t.helpWork} />
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.presetRow}
-        >
-          {rolePresets.map((preset) => {
-            const active = role.trim().toLowerCase() === preset.label.toLowerCase();
-            return (
-              <Pressable
-                key={preset.label}
-                onPress={() => applyRolePreset(preset)}
-                style={[styles.preset, active && styles.presetActive]}
-              >
-                <Text
-                  style={[styles.presetText, active && styles.presetTextActive]}
-                >
-                  {preset.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-        <TextInput
-          style={styles.input}
-          placeholder={t.workHint}
-          placeholderTextColor={colors.muted}
+        <FieldLabel text={t.work} required help={t.helpWork} />
+        <Pressable style={styles.selectField} onPress={() => setShowRolePicker(true)}>
+          <View style={styles.selectFieldLeft}>
+            {role && (
+              <Ionicons
+                name={selectedRolePreset?.icon ?? 'person-outline'}
+                size={14}
+                color={colors.primary}
+              />
+            )}
+            <Text
+              style={role ? styles.selectFieldText : styles.selectPlaceholder}
+              numberOfLines={1}
+            >
+              {role || t.chooseWork}
+            </Text>
+          </View>
+          <Ionicons name="chevron-down" size={16} color={colors.primary} />
+        </Pressable>
+        <RolePickerSheet
+          visible={showRolePicker}
+          title={t.chooseWork}
+          options={rolePresets}
           value={role}
-          onChangeText={setRole}
+          onClose={() => setShowRolePicker(false)}
+          onSelect={(label) => {
+            const preset = rolePresets.find((p) => p.label === label);
+            if (preset) applyRolePreset(preset);
+          }}
         />
+        <Text style={styles.orTypeHint}>{t.orTypeWork}</Text>
+        <View style={styles.inputWithIcon}>
+          {role && (
+            <Ionicons
+              name={selectedRolePreset?.icon ?? 'person-outline'}
+              size={16}
+              color={colors.muted}
+            />
+          )}
+          <TextInput
+            style={styles.inputWithIconText}
+            placeholder={t.workHint}
+            placeholderTextColor={colors.muted}
+            value={role}
+            onChangeText={setRole}
+          />
+        </View>
 
-        <FieldLabel text={t.payType} required help={t.helpPayType} />
+        <FieldLabel text={t.payTypePer} required help={t.helpPayType} />
         <View style={styles.segment}>
           {(
             [
-              { value: 'monthly' as SalaryType, label: t.perMonth },
-              { value: 'daily' as SalaryType, label: t.perDay },
-              { value: 'hourly' as SalaryType, label: t.perHour },
-              { value: 'per_unit' as SalaryType, label: t.perUnit },
+              { value: 'monthly' as SalaryType, label: t.payTypeMonth },
+              { value: 'daily' as SalaryType, label: t.payTypeDay },
+              { value: 'hourly' as SalaryType, label: t.payTypeHour },
+              { value: 'per_unit' as SalaryType, label: t.payTypeUnit },
             ]
           ).map((option) => (
             <Pressable
@@ -366,26 +400,6 @@ export default function WorkerScreen() {
           </>
         )}
 
-        <FieldLabel text={t.weeklyOffLabel} help={t.helpWeeklyOff} />
-        <View style={styles.weekRow}>
-          {WEEKDAYS.map((label, day) => {
-            const active = weeklyOffs.includes(day);
-            return (
-              <Pressable
-                key={day}
-                onPress={() => toggleWeeklyOff(day)}
-                style={[styles.weekDay, active && styles.weekDayActive]}
-              >
-                <Text
-                  style={[styles.weekDayText, active && styles.weekDayTextActive]}
-                >
-                  {label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
         <FieldLabel text={t.hiredOn} required help={t.helpHiredOn} />
         <Pressable style={styles.input} onPress={() => setShowPicker(true)}>
           <Text style={styles.dateText}>{formatDateKey(startDate)}</Text>
@@ -452,6 +466,26 @@ export default function WorkerScreen() {
             )}
           </>
         )}
+
+        <FieldLabel text={t.weeklyOffLabel} help={t.helpWeeklyOff} />
+        <View style={styles.weekRow}>
+          {WEEKDAYS.map((label, day) => {
+            const active = weeklyOffs.includes(day);
+            return (
+              <Pressable
+                key={day}
+                onPress={() => toggleWeeklyOff(day)}
+                style={[styles.weekDay, active && styles.weekDayActive]}
+              >
+                <Text
+                  style={[styles.weekDayText, active && styles.weekDayTextActive]}
+                >
+                  {label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
 
         <FieldLabel text={t.phone} help={t.helpPhone} />
         <TextInput
@@ -526,6 +560,50 @@ const makeStyles = (colors: Colors) =>
       justifyContent: 'center',
     },
     dateText: { fontSize: 15, color: colors.text },
+    inputWithIcon: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      borderRadius: radius.md,
+      paddingHorizontal: space.md,
+      paddingVertical: space.md,
+    },
+    inputWithIconText: { flex: 1, fontSize: 15, color: colors.text, padding: 0 },
+    // Deliberately smaller and accent-bordered, unlike the plain `input`
+    // below it — the two fields look identical once a role is picked
+    // ("Labour" over "Labour"), so this one needs its own visual identity
+    // (a chevron, a tighter size, the accent color) to read as "tap to pick
+    // from a list" rather than a second copy of the free-text box.
+    selectField: {
+      // Shrink-wraps to its content (icon + label + chevron) instead of a
+      // fixed width, so "Cook" doesn't leave the same wasted gap "Gardener"
+      // would fill — alignSelf stops the row from stretching to full width
+      // the way a plain View child normally would.
+      alignSelf: 'flex-start',
+      maxWidth: '80%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: space.sm,
+      borderWidth: 1,
+      borderColor: colors.primary,
+      backgroundColor: colors.surface,
+      borderRadius: radius.md,
+      paddingHorizontal: space.md,
+      paddingVertical: space.sm,
+    },
+    selectFieldLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.xs,
+      flexShrink: 1,
+    },
+    selectFieldText: { fontSize: 13, fontWeight: '600', color: colors.primary, flexShrink: 1 },
+    selectPlaceholder: { fontSize: 13, fontWeight: '600', color: colors.muted, flexShrink: 1 },
+    orTypeHint: { fontSize: 11, color: colors.muted, marginTop: -2 },
     segment: {
       flexDirection: 'row',
       flexWrap: 'wrap',

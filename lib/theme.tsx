@@ -11,7 +11,7 @@ import { Appearance } from 'react-native';
 import { getSetting, setSetting } from './db';
 
 export type ThemeMode = 'dark' | 'light';
-export type AccentKey = 'blue' | 'violet' | 'rose' | 'gold';
+export type AccentKey = 'blue' | 'violet' | 'rose' | 'gold' | 'teal' | 'magenta' | 'indigo';
 
 export interface Colors {
   bg: string;
@@ -90,15 +90,41 @@ const ACCENTS: Record<AccentKey, { dark: Pick<Colors, 'primary' | 'onPrimary'>; 
     dark: { primary: '#D4A017', onPrimary: '#3A2A00' },
     light: { primary: '#92400E', onPrimary: '#FFFFFF' },
   },
+  teal: {
+    dark: { primary: '#2DD4BF', onPrimary: '#053B36' },
+    light: { primary: '#0F766E', onPrimary: '#FFFFFF' },
+  },
+  magenta: {
+    dark: { primary: '#E879F9', onPrimary: '#4A044E' },
+    light: { primary: '#A21CAF', onPrimary: '#FFFFFF' },
+  },
+  indigo: {
+    dark: { primary: '#6366F1', onPrimary: '#1E1B4B' },
+    light: { primary: '#4338CA', onPrimary: '#FFFFFF' },
+  },
 };
 
-export const ACCENT_KEYS: AccentKey[] = ['blue', 'violet', 'rose', 'gold'];
+export const ACCENT_KEYS: AccentKey[] = [
+  'blue',
+  'violet',
+  'rose',
+  'gold',
+  'teal',
+  'magenta',
+  'indigo',
+];
 export const ACCENT_SWATCH: Record<AccentKey, string> = {
   blue: ACCENTS.blue.dark.primary,
   violet: ACCENTS.violet.dark.primary,
   rose: ACCENTS.rose.dark.primary,
   gold: ACCENTS.gold.dark.primary,
+  teal: ACCENTS.teal.dark.primary,
+  magenta: ACCENTS.magenta.dark.primary,
+  indigo: ACCENTS.indigo.dark.primary,
 };
+
+/** Colors selectable without premium — everything else is a premium unlock. */
+export const FREE_ACCENT_KEYS: AccentKey[] = ['blue', 'violet'];
 
 export const radius = { sm: 8, md: 12, lg: 16, pill: 999 };
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24 };

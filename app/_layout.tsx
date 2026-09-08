@@ -16,6 +16,7 @@ import { initDb } from '@/lib/db';
 import { ThemeProvider, useTheme } from '@/lib/theme';
 import { I18nProvider } from '@/lib/i18n';
 import AppAlertHost from '@/components/AppAlertHost';
+import AppToastHost from '@/components/AppToastHost';
 
 /**
  * expo-notifications runs a push-token auto-registration side effect the
@@ -127,6 +128,7 @@ function Shell() {
         }}
       />
       <AppAlertHost />
+      <AppToastHost />
     </>
   );
 }

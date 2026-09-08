@@ -153,6 +153,8 @@ export default function CalendarScreen() {
     [selected],
   );
 
+  const isPerUnit = selected?.salary_type === 'per_unit';
+
   const cells = useMemo(() => {
     const days = datesInPeriod(period);
     const leading = days.length > 0 ? dayOfWeek(days[0]) : 0;
@@ -329,6 +331,8 @@ export default function CalendarScreen() {
                 (selected.end_date != null && dateKey > selected.end_date);
               const disabled = isFuture || outOfTerm;
               const impliedOff = !status && offs.includes(dayOfWeek(dateKey));
+              const qty = quantities[dateKey];
+              const showQty = isPerUnit && status === 'present' && qty != null;
 
               return (
                 <Pressable
@@ -357,6 +361,11 @@ export default function CalendarScreen() {
                     >
                       {dayNumber}
                     </Text>
+                    {showQty && (
+                      <Text style={styles.qtyBadge} numberOfLines={1}>
+                        {qty}
+                      </Text>
+                    )}
                   </View>
                 </Pressable>
               );
@@ -378,6 +387,11 @@ export default function CalendarScreen() {
             ))}
           </View>
 
+          {isPerUnit && (
+            <Text style={styles.hint}>
+              {t.qtyHint(selected.unit_label || t.unit.toLowerCase())}
+            </Text>
+          )}
           <Text style={styles.hint}>{t.tapHint}</Text>
         </ScrollView>
       )}
@@ -494,6 +508,15 @@ const makeStyles = (colors: Colors) =>
     dayText: { fontSize: 13, fontWeight: '600', color: colors.text },
     dayTextOnColor: { color: '#FFFFFF' },
     dayTextDisabled: { color: colors.off, fontWeight: '400' },
+    // Sits under the day number inside the same cell — quantity delivered
+    // that day, so a milkman's whole month is scannable without opening
+    // each day one at a time.
+    qtyBadge: {
+      fontSize: 9,
+      fontWeight: '700',
+      color: 'rgba(255,255,255,0.9)',
+      marginTop: -1,
+    },
     counter: {
       marginTop: space.lg,
       fontSize: 13,

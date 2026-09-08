@@ -36,9 +36,20 @@ import {
   isExportReminderEnabled,
   skipExportReminderAsk,
 } from '@/lib/reminders';
-import { ACCENT_KEYS, ACCENT_SWATCH, AccentKey, Colors, radius, space, ThemeMode, useTheme } from '@/lib/theme';
+import {
+  ACCENT_KEYS,
+  ACCENT_SWATCH,
+  AccentKey,
+  Colors,
+  FREE_ACCENT_KEYS,
+  radius,
+  space,
+  ThemeMode,
+  useTheme,
+} from '@/lib/theme';
 import { Lang, LANG_NAMES, useI18n } from '@/lib/i18n';
 import { showAppAlert } from '@/components/AppAlertHost';
+import { showAppToast } from '@/components/AppToastHost';
 import ProfileButton from '@/components/ProfileButton';
 
 const FEEDBACK_EMAIL = 'akki221099@gmail.com';
@@ -53,7 +64,8 @@ const PREMIUM_FEATURES: {
     | 'featHistory'
     | 'featUnlimitedExport'
     | 'featReminders'
-    | 'featAppLock';
+    | 'featAppLock'
+    | 'featColors';
   icon: keyof typeof Ionicons.glyphMap;
 }[] = [
   { key: 'featUnlimited', icon: 'people' },
@@ -61,6 +73,7 @@ const PREMIUM_FEATURES: {
   { key: 'featUnlimitedExport', icon: 'cloud-upload' },
   { key: 'featReminders', icon: 'notifications' },
   { key: 'featAppLock', icon: 'lock-closed' },
+  { key: 'featColors', icon: 'color-palette' },
 ];
 
 /** What the free plan already includes, shown with the same icon treatment. */
@@ -88,6 +101,9 @@ export default function SettingsScreen() {
     violet: t.accentViolet,
     rose: t.accentRose,
     gold: t.accentGold,
+    teal: t.accentTeal,
+    magenta: t.accentMagenta,
+    indigo: t.accentIndigo,
   };
 
   const langs: Lang[] = ['en', 'hi'];
@@ -108,13 +124,23 @@ export default function SettingsScreen() {
   useEffect(() => {
     if (hasAskedExportReminder()) return;
     showAppAlert(t.reminderAskTitle, t.reminderAskBody, [
-      { text: t.notNow, style: 'cancel', onPress: () => skipExportReminderAsk() },
+      {
+        text: t.notNow,
+        style: 'cancel',
+        onPress: () => {
+          skipExportReminderAsk();
+          showAppToast(t.notificationsDisabledToast);
+        },
+      },
       {
         text: t.enable,
         onPress: async () => {
           skipExportReminderAsk();
           const result = await enableExportReminder();
           setReminderOn(result === 'granted');
+          showAppToast(
+            result === 'granted' ? t.notificationsEnabledToast : t.notificationsDisabledToast,
+          );
         },
       },
     ]);
@@ -132,13 +158,16 @@ export default function SettingsScreen() {
       const result = await enableExportReminder();
       if (result === 'denied') {
         setReminderOn(false);
+        showAppToast(t.notificationsDisabledToast);
         onReminderDenied();
         return;
       }
       setReminderOn(true);
+      showAppToast(t.notificationsEnabledToast);
     } else {
       await disableExportReminder();
       setReminderOn(false);
+      showAppToast(t.notificationsDisabledToast);
     }
   };
 
@@ -147,13 +176,16 @@ export default function SettingsScreen() {
       const result = await enableDueReminder();
       if (result === 'denied') {
         setDueReminderOn(false);
+        showAppToast(t.notificationsDisabledToast);
         onReminderDenied();
         return;
       }
       setDueReminderOn(true);
+      showAppToast(t.notificationsEnabledToast);
     } else {
       await disableDueReminder();
       setDueReminderOn(false);
+      showAppToast(t.notificationsDisabledToast);
     }
   };
 
@@ -340,26 +372,43 @@ export default function SettingsScreen() {
 
         <Text style={styles.label}>{t.accentColor}</Text>
         <View style={styles.accentRow}>
-          {ACCENT_KEYS.map((key) => (
-            <Pressable
-              key={key}
-              onPress={() => setAccent(key)}
-              style={styles.accentItem}
-            >
-              <View
-                style={[
-                  styles.accentSwatch,
-                  { backgroundColor: ACCENT_SWATCH[key] },
-                  accent === key && styles.accentSwatchActive,
-                ]}
+          {ACCENT_KEYS.map((key) => {
+            const locked = !isPremium() && !FREE_ACCENT_KEYS.includes(key);
+            return (
+              <Pressable
+                key={key}
+                onPress={() => {
+                  if (locked) {
+                    showAppAlert(t.accentLockedTitle, t.accentLockedBody, [
+                      { text: t.cancel, style: 'cancel' },
+                      { text: t.upgrade, onPress: onUpgrade },
+                    ]);
+                    return;
+                  }
+                  setAccent(key);
+                }}
+                style={styles.accentItem}
               >
-                {accent === key && (
-                  <Ionicons name="checkmark" size={16} color="#FFFFFF" />
-                )}
-              </View>
-              <Text style={styles.accentLabel}>{accentLabel[key]}</Text>
-            </Pressable>
-          ))}
+                <View
+                  style={[
+                    styles.accentSwatch,
+                    { backgroundColor: ACCENT_SWATCH[key] },
+                    accent === key && styles.accentSwatchActive,
+                    locked && styles.accentSwatchLocked,
+                  ]}
+                >
+                  {locked ? (
+                    <Ionicons name="lock-closed" size={14} color="#FFFFFF" />
+                  ) : (
+                    accent === key && (
+                      <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                    )
+                  )}
+                </View>
+                <Text style={styles.accentLabel}>{accentLabel[key]}</Text>
+              </Pressable>
+            );
+          })}
         </View>
 
         <Text style={styles.label}>{t.language}</Text>
@@ -549,7 +598,7 @@ const makeStyles = (colors: Colors) =>
     segmentItemActive: { backgroundColor: colors.surface },
     segmentText: { fontSize: 14, color: colors.muted, fontWeight: '600' },
     segmentTextActive: { color: colors.primary },
-    accentRow: { flexDirection: 'row', gap: space.lg },
+    accentRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.lg },
     accentItem: { alignItems: 'center', gap: space.xs },
     accentSwatch: {
       width: 36,
@@ -561,6 +610,7 @@ const makeStyles = (colors: Colors) =>
       borderColor: 'transparent',
     },
     accentSwatchActive: { borderColor: colors.text },
+    accentSwatchLocked: { opacity: 0.5 },
     accentLabel: { fontSize: 11, color: colors.muted },
     premiumCard: {
       marginBottom: space.md,
