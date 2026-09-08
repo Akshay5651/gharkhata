@@ -179,6 +179,9 @@ const en = {
 
   guideTitle: 'How GharKhata works',
   guideDone: 'Got it',
+  guideWhoTitle: 'This app is for you',
+  guideWhoBody:
+    'GharKhata is for you — the household employer — to track attendance and calculate salary for your maid, cook, driver, milkman, gardener, or labour. They do not need to install anything. Just add their name here — their phone or UPI ID is only needed if you want to send them a salary slip or pay online.',
   guideHomeTitle: 'Mark attendance daily',
   guideHomeBody: 'Home shows every worker with one-tap Present, Half day, or Absent for today.',
   guideCalendarTitle: 'Fix a past day',
@@ -467,6 +470,9 @@ const hi: Dict = {
 
   guideTitle: 'GharKhata कैसे काम करता है',
   guideDone: 'समझ गया',
+  guideWhoTitle: 'यह ऐप आपके लिए है',
+  guideWhoBody:
+    'GharKhata आपके लिए है — घर के मालिक के लिए — ताकि आप अपनी बाई, रसोइया, ड्राइवर, दूधवाला, माली या मज़दूर की हाज़िरी और तनख्वाह का हिसाब रख सकें। उन्हें कोई ऐप डालने की ज़रूरत नहीं है। बस उनका नाम यहाँ जोड़ें — फ़ोन नंबर या UPI ID सिर्फ़ तभी चाहिए जब आप उन्हें पर्ची भेजना या ऑनलाइन भुगतान करना चाहें।',
   guideHomeTitle: 'रोज़ हाज़िरी लगाएँ',
   guideHomeBody: 'होम स्क्रीन पर हर कामगार के लिए आज का हाज़िर, आधा दिन या गैरहाज़िर एक टैप में लगाएँ।',
   guideCalendarTitle: 'पुराना दिन ठीक करें',

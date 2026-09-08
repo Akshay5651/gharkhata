@@ -23,6 +23,7 @@ export default function GuideSheet({ visible, onClose }: GuideSheetProps) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const steps: { icon: keyof typeof Ionicons.glyphMap; title: string; body: string }[] = [
+    { icon: 'people-outline', title: t.guideWhoTitle, body: t.guideWhoBody },
     { icon: 'home-outline', title: t.guideHomeTitle, body: t.guideHomeBody },
     { icon: 'calendar-outline', title: t.guideCalendarTitle, body: t.guideCalendarBody },
     { icon: 'cash-outline', title: t.guideSalaryTitle, body: t.guideSalaryBody },
