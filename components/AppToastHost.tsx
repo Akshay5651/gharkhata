@@ -10,6 +10,11 @@ let listener: ((message: string) => void) | null = null;
 const VISIBLE_MS = 1200;
 const FADE_MS = 200;
 
+// Clears the bottom tab bar (~56dp) plus a comfortable gap above it — the
+// toast is mounted at the app root, above every tab screen, so without this
+// it lands right on top of the tab bar buttons instead of above them.
+const TAB_BAR_CLEARANCE = 76;
+
 /** Brief, non-blocking confirmation — for acknowledging a toggle/setting the user just changed, not for anything that needs an OK tap. */
 export function showAppToast(message: string): void {
   listener?.(message);
@@ -47,7 +52,7 @@ export default function AppToastHost() {
   return (
     <Animated.View
       pointerEvents="none"
-      style={[styles.wrap, { bottom: insets.bottom + space.xl, opacity }]}
+      style={[styles.wrap, { bottom: insets.bottom + TAB_BAR_CLEARANCE, opacity }]}
     >
       <Text style={styles.text}>{message}</Text>
     </Animated.View>

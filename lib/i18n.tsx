@@ -65,6 +65,8 @@ const en = {
   remove: 'Remove worker',
 
   dayRate: 'Day rate',
+  rateLabel: 'Rate',
+  deliveredLabel: 'Delivered',
   payableDays: 'Payable days',
   earned: 'Earned',
   bonus: 'Bonus',
@@ -72,8 +74,8 @@ const en = {
   deduction: 'Deduction',
   netPayable: 'Net payable',
   partMonth: 'Part month',
-  whatsapp: 'WhatsApp',
-  pdfSlip: 'PDF slip',
+  whatsapp: 'WhatsApp share',
+  pdfSlip: 'PDF share',
 
   daysBlank: (n: number) => `${n} ${n === 1 ? 'day' : 'days'} not marked`,
   notCounted: 'Not counted in salary. Tap to mark all present.',
@@ -263,6 +265,8 @@ const en = {
   ok: 'OK',
   deleteWorkerTitle: (name: string) => `Delete ${name}?`,
   deleteWorkerBody: 'Their attendance and payment history stays saved — you just won’t see them day to day.',
+  workerSavedToast: (name: string) => `${name} saved`,
+  workerDeletedToast: (name: string) => `${name} removed`,
 
   backupGuideTitle: 'Backup & Restore, explained',
   backupGuideBody:
@@ -271,8 +275,7 @@ const en = {
   backupLimitBody: 'The free plan allows 2 exports a month. Upgrade for unlimited exports — Restore is always free.',
   exportUsageHint: (used: number, limit: number) => `${used} of ${limit} exports used this month`,
   exportDoneTitle: 'Backup ready',
-  exportDoneBody: (fileName: string) =>
-    `${fileName} — saved only if you picked a location in the last step. If you backed out, export again.`,
+  exportDoneBody: (fileName: string) => `${fileName} saved successfully to phone storage.`,
 
   yourProfile: 'Your profile',
   yourProfileHint: 'Your own details — not a worker\'s. Stays on this phone, shows on payslips if filled in.',
@@ -356,6 +359,8 @@ const hi: Dict = {
   remove: 'कामगार हटाएँ',
 
   dayRate: 'दिन का रेट',
+  rateLabel: 'रेट',
+  deliveredLabel: 'आपूर्ति',
   payableDays: 'देय दिन',
   earned: 'कमाया',
   bonus: 'बोनस',
@@ -363,8 +368,8 @@ const hi: Dict = {
   deduction: 'कटौती',
   netPayable: 'कुल देना है',
   partMonth: 'आधा महीना',
-  whatsapp: 'व्हाट्सएप',
-  pdfSlip: 'पीडीएफ पर्ची',
+  whatsapp: 'व्हाट्सएप शेयर',
+  pdfSlip: 'पीडीएफ शेयर',
 
   daysBlank: (n: number) => `${n} दिन नहीं लगाए`,
   notCounted: 'तनख्वाह में नहीं गिने। सबको हाज़िर लगाने के लिए दबाएँ।',
@@ -554,6 +559,8 @@ const hi: Dict = {
   ok: 'ठीक है',
   deleteWorkerTitle: (name: string) => `${name} को हटाएँ?`,
   deleteWorkerBody: 'इनकी हाज़िरी और भुगतान का रिकॉर्ड सुरक्षित रहेगा — बस रोज़ाना दिखना बंद हो जाएगा।',
+  workerSavedToast: (name: string) => `${name} सेव हो गया`,
+  workerDeletedToast: (name: string) => `${name} हटा दिया गया`,
 
   backupGuideTitle: 'बैकअप और रीस्टोर — पूरी जानकारी',
   backupGuideBody:
@@ -562,8 +569,7 @@ const hi: Dict = {
   backupLimitBody: 'मुफ़्त प्लान में महीने में 2 एक्सपोर्ट मिलते हैं। बिना सीमा के लिए अपग्रेड करें — रीस्टोर हमेशा मुफ़्त है।',
   exportUsageHint: (used: number, limit: number) => `${limit} में से ${used} एक्सपोर्ट इस्तेमाल`,
   exportDoneTitle: 'बैकअप तैयार',
-  exportDoneBody: (fileName: string) =>
-    `${fileName} — पिछले स्टेप में जगह चुनी हो तभी सेव हुआ है। अगर बीच में रुक गए, तो फिर से एक्सपोर्ट करें।`,
+  exportDoneBody: (fileName: string) => `${fileName} फ़ोन की स्टोरेज में सेव हो गया।`,
 
   yourProfile: 'आपकी प्रोफ़ाइल',
   yourProfileHint: 'यह आपकी अपनी जानकारी है, किसी कामगार की नहीं। यह सिर्फ़ इस फ़ोन पर रहती है, और भरने पर सैलरी पर्ची में दिखती है।',

@@ -24,6 +24,7 @@ import { Colors, radius, space, useTheme } from '@/lib/theme';
 import { useI18n } from '@/lib/i18n';
 import FieldLabel from '@/components/FieldLabel';
 import { showAppAlert } from '@/components/AppAlertHost';
+import { showAppToast } from '@/components/AppToastHost';
 import MoneyInput from '@/components/MoneyInput';
 import DatePickerSheet from '@/components/DatePickerSheet';
 import RolePickerSheet from '@/components/RolePickerSheet';
@@ -201,6 +202,7 @@ export default function WorkerScreen() {
     } else {
       updateHelper(Number(id), payload);
     }
+    showAppToast(t.workerSavedToast(payload.name));
     router.back();
   };
 
@@ -216,6 +218,7 @@ export default function WorkerScreen() {
         style: 'destructive',
         onPress: () => {
           archiveHelper(existing.id);
+          showAppToast(t.workerDeletedToast(existing.name));
           router.back();
         },
       },

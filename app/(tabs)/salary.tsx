@@ -273,13 +273,23 @@ export default function SalaryScreen() {
 
             <View style={styles.divider} />
 
-            <Text style={styles.rate}>
-              {helper.salary_type === 'per_unit'
-                ? `${formatINR(payroll.dayRatePaise)}/${helper.unit_label || t.unit.toLowerCase()} · ${payroll.totalQuantity} ${helper.unit_label ?? ''}`
-                : helper.salary_type === 'hourly'
-                  ? `${formatINR(payroll.dayRatePaise)}/${t.perHour.toLowerCase()} · ${payroll.payableDays} ${t.hoursWorked.toLowerCase()}`
-                  : `${formatINR(payroll.dayRatePaise)}/${t.perDay.toLowerCase()} · ${payroll.payableDays} ${t.payableDays.toLowerCase()}`}
-            </Text>
+            <View style={styles.rateRow}>
+              <Text style={styles.rate}>
+                {t.rateLabel}:{' '}
+                {helper.salary_type === 'per_unit'
+                  ? `${formatINR(payroll.dayRatePaise)}/${helper.unit_label || t.unit.toLowerCase()}`
+                  : helper.salary_type === 'hourly'
+                    ? `${formatINR(payroll.dayRatePaise)}/${t.perHour.toLowerCase()}`
+                    : `${formatINR(payroll.dayRatePaise)}/${t.perDay.toLowerCase()}`}
+              </Text>
+              <Text style={styles.rate}>
+                {helper.salary_type === 'per_unit'
+                  ? `${t.deliveredLabel}: ${payroll.totalQuantity} ${helper.unit_label ?? ''}`
+                  : helper.salary_type === 'hourly'
+                    ? `${t.hoursWorked}: ${payroll.payableDays}`
+                    : `${t.payableDays}: ${payroll.payableDays}`}
+              </Text>
+            </View>
             {payroll.isPartialMonth && (
               <Text style={styles.partial}>
                 {t.partMonth}: {formatDateKey(payroll.windowStart)} –{' '}
@@ -451,6 +461,9 @@ const makeStyles = (colors: Colors) =>
     payBtnText: { color: colors.onPrimary, fontWeight: '600', fontSize: 12 },
     payBtnTextDisabled: { color: colors.muted },
     divider: { height: 1, backgroundColor: colors.border, marginVertical: space.md },
+    // Two separately-labeled lines instead of one string joined by a middle
+    // dot — "₹45/litre · 7.75 litre" read as one run-on number to squint at.
+    rateRow: { gap: 2 },
     rate: { fontSize: 13, color: colors.muted },
     partial: { fontSize: 12, color: colors.leave, marginTop: 2 },
     warn: {
