@@ -14,6 +14,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
+import { activeHelperCount } from '@/lib/db';
 import {
   canExport,
   exportActionsUsed,
@@ -191,14 +193,36 @@ export default function SettingsScreen() {
     }
   };
 
+  // Appended below whatever the user typed — pure diagnostic context (app
+  // version, device, plan, data scale) that would otherwise have to be
+  // asked for over a follow-up email. Everything here is already visible in
+  // the compose screen before the user hits send, and nothing leaves the
+  // device except through this email the user is already choosing to send.
+  const buildDiagnosticInfo = (): string => {
+    const version = Constants.expoConfig?.version ?? '1.0.0';
+    const device = Constants.deviceName ?? 'Unknown device';
+    const osVersion =
+      Platform.OS === 'android' ? `Android ${Platform.Version}` : String(Platform.Version);
+    const plan = isPremium() ? 'Premium' : 'Free';
+    return [
+      '---',
+      `App: GharKhata v${version}`,
+      `Device: ${device} · ${osVersion}`,
+      `Language: ${LANG_NAMES[lang]}`,
+      `Plan: ${plan}`,
+      `Workers tracked: ${activeHelperCount()}`,
+    ].join('\n');
+  };
+
   // No backend, so feedback leaves through the user's own mail app. Nothing
   // is collected or sent in the background.
   const onSendFeedback = async () => {
-    const body = feedback.trim();
-    if (!body) {
+    const message = feedback.trim();
+    if (!message) {
       showAppAlert(t.feedback, t.feedbackEmpty, [{ text: t.ok }]);
       return;
     }
+    const body = `${message}\n\n${buildDiagnosticInfo()}`;
     const url =
       `mailto:${FEEDBACK_EMAIL}` +
       `?subject=${encodeURIComponent('GharKhata feedback')}` +

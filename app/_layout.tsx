@@ -113,6 +113,10 @@ function Shell() {
             name="worker/[id]"
             options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
           />
+          <Stack.Screen
+            name="months"
+            options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+          />
         </Stack>
       </Animated.View>
       <Animated.View

@@ -6,7 +6,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -49,6 +49,7 @@ type Row = { helper: Helper; payroll: PayrollBreakdown; balance: WorkerBalance }
 export default function SalaryScreen() {
   useConfirmExitOnBack();
   const router = useRouter();
+  const { period: periodParam } = useLocalSearchParams<{ period?: string }>();
   const { colors } = useTheme();
   const { t } = useI18n();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -77,6 +78,18 @@ export default function SalaryScreen() {
   }, [period]);
 
   useFocusEffect(useCallback(() => load(), [load]));
+
+  // Jumping here from the Months overview screen arrives as a `period`
+  // param rather than a state update — the tab screen stays mounted, so
+  // this is what actually moves the view to the tapped month.
+  useFocusEffect(
+    useCallback(() => {
+      if (periodParam && periodParam !== period) {
+        setPeriod(periodParam);
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [periodParam]),
+  );
 
   const canGoBack = canViewPeriod(shiftPeriod(period, -1));
 
@@ -203,7 +216,9 @@ export default function SalaryScreen() {
           <Pressable onPress={() => changePeriod(-1)} hitSlop={8}>
             <Text style={[styles.arrow, !canGoBack && styles.arrowLocked]}>‹</Text>
           </Pressable>
-          <Text style={styles.period}>{formatPeriod(period)}</Text>
+          <Pressable style={styles.periodBtn} onPress={() => router.push('/months')} hitSlop={8}>
+            <Text style={styles.period}>{formatPeriod(period)}</Text>
+          </Pressable>
           <Pressable onPress={() => changePeriod(1)} hitSlop={8}>
             <Text style={styles.arrow}>›</Text>
           </Pressable>
@@ -417,6 +432,19 @@ const makeStyles = (colors: Colors) =>
     },
     arrow: { fontSize: 26, color: colors.primary, paddingHorizontal: space.sm },
     arrowLocked: { color: colors.off },
+    // A pill + chevron, not bare text — signals there's a tap target here
+    // (the Monthly overview screen) rather than reading as a static label.
+    periodBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: space.md,
+      paddingVertical: 4,
+      borderRadius: radius.pill,
+      backgroundColor: colors.surfaceAlt,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
     period: { fontSize: 15, fontWeight: '600', color: colors.text },
     list: { padding: space.lg, gap: space.md },
     card: {

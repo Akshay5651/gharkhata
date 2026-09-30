@@ -80,6 +80,11 @@ export default function ProfileButton() {
             <Ionicons name="person-outline" size={18} color={colors.text} />
           )}
         </Pressable>
+        {fraction < 1 && (
+          <View style={styles.percentBadge}>
+            <Text style={styles.percentText}>{Math.round(fraction * 100)}%</Text>
+          </View>
+        )}
       </View>
       <ProfileSheet
         visible={open}
@@ -111,4 +116,22 @@ const makeStyles = (colors: Colors) =>
     },
     photo: { width: '100%', height: '100%' },
     initial: { fontSize: 16, fontWeight: '700', color: colors.primary },
+    // A small cutout badge rather than text on the ring itself — the ring is
+    // too thin (3px) to hold a number, so this sits over its bottom-right
+    // edge instead, matching the notification-badge pattern.
+    percentBadge: {
+      position: 'absolute',
+      bottom: -4,
+      right: -8,
+      minWidth: 26,
+      paddingHorizontal: 4,
+      paddingVertical: 1,
+      borderRadius: radius.pill,
+      backgroundColor: colors.primary,
+      borderWidth: 1.5,
+      borderColor: colors.bg,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    percentText: { fontSize: 9, fontWeight: '700', color: colors.onPrimary },
   });
