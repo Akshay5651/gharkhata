@@ -48,6 +48,7 @@ import {
   useTheme,
 } from '@/lib/theme';
 import { Lang, LANG_NAMES, useI18n } from '@/lib/i18n';
+import { useConfirmExitOnBack } from '@/lib/useConfirmExit';
 import { showAppAlert } from '@/components/AppAlertHost';
 import { showAppToast } from '@/components/AppToastHost';
 import ProfileButton from '@/components/ProfileButton';
@@ -87,6 +88,7 @@ const FREE_FEATURES: {
 ];
 
 export default function SettingsScreen() {
+  useConfirmExitOnBack();
   const { colors, mode, setMode, accent, setAccent } = useTheme();
   const { t, lang, setLang } = useI18n();
   const styles = useMemo(() => makeStyles(colors), [colors]);

@@ -59,6 +59,9 @@ const en = {
 
   save: 'Save',
   cancel: 'Cancel',
+  exit: 'Exit',
+  exitAppTitle: 'Exit GharKhata?',
+  exitAppBody: 'Are you sure you want to close the app?',
   change: 'Change',
   delete: 'Delete',
   archive: 'Archive',
@@ -353,6 +356,9 @@ const hi: Dict = {
 
   save: 'सेव करें',
   cancel: 'रद्द करें',
+  exit: 'बाहर निकलें',
+  exitAppTitle: 'GharKhata बंद करें?',
+  exitAppBody: 'क्या आप वाकई ऐप बंद करना चाहते हैं?',
   change: 'बदलें',
   delete: 'हटाएँ',
   archive: 'हटाएँ',

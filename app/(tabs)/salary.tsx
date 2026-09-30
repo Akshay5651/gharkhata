@@ -36,6 +36,7 @@ import { formatINR } from '@/lib/money';
 import { Helper, Payment } from '@/lib/types';
 import { Colors, radius, space, useTheme } from '@/lib/theme';
 import { useI18n } from '@/lib/i18n';
+import { useConfirmExitOnBack } from '@/lib/useConfirmExit';
 import ProfileButton from '@/components/ProfileButton';
 import ScreenBackdrop from '@/components/ScreenBackdrop';
 import { showAppAlert } from '@/components/AppAlertHost';
@@ -46,6 +47,7 @@ import HistorySheet from '@/components/HistorySheet';
 type Row = { helper: Helper; payroll: PayrollBreakdown; balance: WorkerBalance };
 
 export default function SalaryScreen() {
+  useConfirmExitOnBack();
   const router = useRouter();
   const { colors } = useTheme();
   const { t } = useI18n();

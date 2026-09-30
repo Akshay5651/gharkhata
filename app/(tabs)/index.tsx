@@ -33,6 +33,7 @@ import { parseWeeklyOffs } from '@/lib/salary';
 import { AttendanceStatus, Helper } from '@/lib/types';
 import { Colors, radius, space, useTheme } from '@/lib/theme';
 import { Lang, useI18n } from '@/lib/i18n';
+import { useConfirmExitOnBack } from '@/lib/useConfirmExit';
 import { showAppAlert } from '@/components/AppAlertHost';
 import GuideSheet from '@/components/GuideSheet';
 import LanguagePickSheet from '@/components/LanguagePickSheet';
@@ -40,6 +41,7 @@ import ProfileButton from '@/components/ProfileButton';
 import ScreenBackdrop from '@/components/ScreenBackdrop';
 
 export default function HomeScreen() {
+  useConfirmExitOnBack();
   const router = useRouter();
   const { colors, mode, toggle } = useTheme();
   const { t, setLang } = useI18n();

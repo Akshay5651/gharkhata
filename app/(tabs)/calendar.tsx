@@ -30,6 +30,7 @@ import {
 import { AttendanceStatus, Helper } from '@/lib/types';
 import { Colors, radius, space, useTheme } from '@/lib/theme';
 import { useI18n } from '@/lib/i18n';
+import { useConfirmExitOnBack } from '@/lib/useConfirmExit';
 import ProfileButton from '@/components/ProfileButton';
 import ScreenBackdrop from '@/components/ScreenBackdrop';
 import { showAppAlert } from '@/components/AppAlertHost';
@@ -41,6 +42,7 @@ const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const LEGEND: AttendanceStatus[] = ['present', 'half_day', 'absent'];
 
 export default function CalendarScreen() {
+  useConfirmExitOnBack();
   const router = useRouter();
   const { colors } = useTheme();
   const { t } = useI18n();
@@ -97,8 +99,13 @@ export default function CalendarScreen() {
     const out: Record<number, { marked: number; total: number }> = {};
     for (const helper of helpers) {
       const helperOffs = parseWeeklyOffs(helper);
-      const rows = getAttendanceForPeriod(helper.id, period);
-      const marked = new Set(rows.map((r) => r.date));
+      // The selected helper's rows for this period are already sitting in
+      // `marks` from loadMarks() — reuse them instead of querying SQLite a
+      // second time for data we just fetched.
+      const marked =
+        helper.id === selectedId
+          ? new Set(Object.keys(marks))
+          : new Set(getAttendanceForPeriod(helper.id, period).map((r) => r.date));
       let total = 0;
       let done = 0;
       for (const dateKey of datesInPeriod(period)) {
@@ -114,7 +121,7 @@ export default function CalendarScreen() {
       out[helper.id] = { marked: done, total };
     }
     return out;
-  }, [helpers, period, today, marks]);
+  }, [helpers, period, today, marks, selectedId]);
 
   const onTapLocked = (helper: Helper) => {
     showAppAlert(t.lockedWorkerTitle, t.lockedWorkerBody(helper.name), [
