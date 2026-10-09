@@ -22,7 +22,7 @@ import {
   recordPayment,
   saveSnapshot,
 } from '@/lib/db';
-import { sharePayslipPdf, sharePayslipText } from '@/lib/payslip';
+import { sharePayslipPdf } from '@/lib/payslip';
 import { canViewPeriod } from '@/lib/entitlements';
 import { computePayroll, PayrollBreakdown } from '@/lib/salary';
 import { computeWorkerBalance, WorkerBalance } from '@/lib/balance';
@@ -84,7 +84,7 @@ export default function SalaryScreen() {
   // this is what actually moves the view to the tapped month.
   useFocusEffect(
     useCallback(() => {
-      if (periodParam && periodParam !== period) {
+      if (periodParam && periodParam !== period && periodParam <= currentPeriod()) {
         setPeriod(periodParam);
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -93,8 +93,14 @@ export default function SalaryScreen() {
 
   const canGoBack = canViewPeriod(shiftPeriod(period, -1));
 
+  const canGoForward = shiftPeriod(period, 1) <= currentPeriod();
+
   const changePeriod = (delta: number) => {
     const target = shiftPeriod(period, delta);
+    if (delta > 0 && target > currentPeriod()) {
+      showAppAlert(t.futureMonth, t.futureMonthBody, [{ text: t.ok }]);
+      return;
+    }
     if (delta < 0 && !canViewPeriod(target)) {
       showAppAlert(t.olderMonths, t.olderMonthsBody, [{ text: t.ok }]);
       return;
@@ -116,7 +122,9 @@ export default function SalaryScreen() {
 
     showAppAlert(
       t.daysBlank(unmarkedDateKeys.length),
-      `${preview}${more}`,
+      `${t.notCounted}
+
+${preview}${more}`,
       [
         { text: t.cancel, style: 'cancel' },
         {
@@ -209,8 +217,17 @@ export default function SalaryScreen() {
       <ScreenBackdrop icon="wallet" />
       <View style={styles.header}>
         <View style={styles.titleRow}>
-          <ProfileButton />
-          <Text style={styles.title}>{t.salary}</Text>
+          <View style={styles.titleLeft}>
+            <ProfileButton />
+            <Text style={styles.title}>{t.salary}</Text>
+          </View>
+          <Pressable
+            style={styles.monthsBtn}
+            onPress={() => router.push('/months')}
+            hitSlop={10}
+          >
+            <Ionicons name="calendar-number-outline" size={20} color={colors.text} />
+          </Pressable>
         </View>
         <View style={styles.periodRow}>
           <Pressable onPress={() => changePeriod(-1)} hitSlop={8}>
@@ -220,161 +237,164 @@ export default function SalaryScreen() {
             <Text style={styles.period}>{formatPeriod(period)}</Text>
           </Pressable>
           <Pressable onPress={() => changePeriod(1)} hitSlop={8}>
-            <Text style={styles.arrow}>›</Text>
+            <Text style={[styles.arrow, !canGoForward && styles.arrowLocked]}>›</Text>
           </Pressable>
         </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.list}>
-        {rows.map(({ helper, payroll, balance }) => (
-          <View key={helper.id} style={styles.card}>
-            <Text style={styles.name}>{helper.name}</Text>
+        {rows.map(({ helper, payroll, balance }) => {
+          const isCurrent = period === currentPeriod();
+          const isPerUnit = helper.salary_type === 'per_unit';
+          const isHourly = helper.salary_type === 'hourly';
+          const unitWord = isPerUnit
+            ? helper.unit_label || t.unit.toLowerCase()
+            : isHourly
+              ? t.payTypeHour.toLowerCase()
+              : t.payTypeDay.toLowerCase();
+          // One line of arithmetic — "9 litre × ₹10/litre" — replaces separate
+          // rate and quantity rows.
+          const count = isPerUnit
+            ? `${payroll.totalQuantity} ${helper.unit_label ?? ''}`.trim()
+            : isHourly
+              ? t.hoursN(payroll.payableDays)
+              : t.daysN(payroll.payableDays);
+          const formula = `${count} × ${formatINR(payroll.dayRatePaise)}/${unitWord}`;
+          const hasAdjustments =
+            payroll.bonusesPaise > 0 ||
+            payroll.advancesPaise !== 0 ||
+            payroll.finesPaise > 0;
+          const owed = balance.balancePaise > 0;
 
-            <View style={styles.balanceRow}>
-              <Pressable
-                style={styles.balanceTap}
-                onPress={() => setHistoryFor(helper)}
-              >
-                <View style={styles.balanceLabelRow}>
-                  <Text style={styles.balanceLabel}>{t.balanceDue}</Text>
-                  <Ionicons name="chevron-forward" size={12} color={colors.muted} />
-                </View>
-                <Text
-                  style={[
-                    styles.balanceValue,
-                    balance.balancePaise > 0
-                      ? styles.balanceOwed
-                      : styles.balanceSettled,
-                  ]}
-                >
-                  {balance.balancePaise > 0
-                    ? formatINR(balance.balancePaise)
-                    : balance.balancePaise < 0
-                      ? `${t.paidExtra} ${formatINR(-balance.balancePaise)}`
-                      : // Zero reads two different ways: a brand-new worker with
-                        // no attendance and no payments yet has nothing to settle,
-                        // which is not the same claim as "paid off" — that only
-                        // means something once there was actually a due to clear.
-                        balance.totalDuePaise === 0 && balance.totalPaidPaise === 0
-                        ? t.notStarted
-                        : t.allSettled}
+          return (
+            <View key={helper.id} style={styles.card}>
+              <View style={styles.nameRow}>
+                <Text style={styles.name}>{helper.name}</Text>
+                {isCurrent && (
+                  <View style={styles.progressPill}>
+                    <Text style={styles.progressPillText}>{t.inProgress}</Text>
+                  </View>
+                )}
+              </View>
+
+              <View style={styles.line}>
+                <Text style={styles.lineLabel}>{formula}</Text>
+                {hasAdjustments && (
+                  <Text style={styles.lineValue}>{formatINR(payroll.earnedPaise)}</Text>
+                )}
+              </View>
+              {payroll.isPartialMonth && (
+                <Text style={styles.partial}>
+                  {t.partMonth}: {formatDateKey(payroll.windowStart)} –{' '}
+                  {formatDateKey(payroll.windowEnd)}
                 </Text>
-              </Pressable>
-              <View style={styles.balanceActions}>
+              )}
+              {payroll.bonusesPaise > 0 && (
+                <View style={styles.line}>
+                  <Text style={styles.lineLabel}>{t.bonus}</Text>
+                  <Text style={styles.lineValue}>
+                    +{formatINR(payroll.bonusesPaise)}
+                  </Text>
+                </View>
+              )}
+              {payroll.advancesPaise !== 0 && (
+                <View style={styles.line}>
+                  <Text style={styles.lineLabel}>{t.advance}</Text>
+                  <Text style={styles.lineValue}>
+                    −{formatINR(payroll.advancesPaise)}
+                  </Text>
+                </View>
+              )}
+              {payroll.finesPaise > 0 && (
+                <View style={styles.line}>
+                  <Text style={styles.lineLabel}>{t.deduction}</Text>
+                  <Text style={styles.lineValue}>−{formatINR(payroll.finesPaise)}</Text>
+                </View>
+              )}
+
+              {payroll.unmarkedDays > 0 && (
                 <Pressable
-                  style={styles.iconBtn}
-                  onPress={() => setLedgerFor(helper)}
-                  hitSlop={8}
+                  style={styles.warn}
+                  onPress={() => fillUnmarked({ helper, payroll })}
+                  hitSlop={6}
                 >
-                  <Ionicons name="add" size={20} color={colors.primary} />
+                  <Ionicons name="alert-circle" size={14} color={colors.warnText} />
+                  <Text style={styles.warnText}>
+                    {t.daysBlank(payroll.unmarkedDays)}
+                  </Text>
                 </Pressable>
+              )}
+
+              <View style={styles.netBox}>
+                <Text style={styles.netLabel}>
+                  {isCurrent ? t.netSoFar : t.netPayable}
+                </Text>
+                <Text style={styles.netValue}>
+                  {formatINR(payroll.netPayablePaise)}
+                </Text>
+              </View>
+
+              <View style={styles.balanceRow}>
                 <Pressable
-                  style={[
-                    styles.payBtn,
-                    balance.balancePaise <= 0 && styles.payBtnDisabled,
-                  ]}
-                  onPress={() => setPaymentFor(helper)}
-                  disabled={balance.balancePaise <= 0}
+                  style={styles.balanceTap}
+                  onPress={() => setHistoryFor(helper)}
                 >
+                  <View style={styles.balanceLabelRow}>
+                    <Text style={styles.balanceLabel}>{t.totalBalanceDue}</Text>
+                    <Ionicons name="chevron-forward" size={12} color={colors.muted} />
+                  </View>
                   <Text
                     style={[
-                      styles.payBtnText,
-                      balance.balancePaise <= 0 && styles.payBtnTextDisabled,
+                      styles.balanceValue,
+                      owed ? styles.balanceOwed : styles.balanceSettled,
                     ]}
                   >
+                    {owed
+                      ? formatINR(balance.balancePaise)
+                      : balance.balancePaise < 0
+                        ? `${t.paidExtra} ${formatINR(-balance.balancePaise)}`
+                        : // Zero reads two different ways: a brand-new worker with
+                          // no attendance and no payments yet has nothing to settle,
+                          // which is not the same claim as "paid off" — that only
+                          // means something once there was actually a due to clear.
+                          balance.totalDuePaise === 0 && balance.totalPaidPaise === 0
+                          ? t.notStarted
+                          : t.allSettled}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.payBtn, !owed && styles.payBtnDisabled]}
+                  onPress={() => setPaymentFor(helper)}
+                  disabled={!owed}
+                >
+                  <Text style={[styles.payBtnText, !owed && styles.payBtnTextDisabled]}>
                     {t.recordPayment}
                   </Text>
                 </Pressable>
               </View>
-            </View>
+              {!isCurrent && owed && (
+                <Text style={styles.balanceHint}>{t.carryForwardHint}</Text>
+              )}
 
-            <View style={styles.divider} />
-
-            <View style={styles.rateRow}>
-              <Text style={styles.rate}>
-                {t.rateLabel}:{' '}
-                {helper.salary_type === 'per_unit'
-                  ? `${formatINR(payroll.dayRatePaise)}/${helper.unit_label || t.unit.toLowerCase()}`
-                  : helper.salary_type === 'hourly'
-                    ? `${formatINR(payroll.dayRatePaise)}/${t.perHour.toLowerCase()}`
-                    : `${formatINR(payroll.dayRatePaise)}/${t.perDay.toLowerCase()}`}
-              </Text>
-              <Text style={styles.rate}>
-                {helper.salary_type === 'per_unit'
-                  ? `${t.deliveredLabel}: ${payroll.totalQuantity} ${helper.unit_label ?? ''}`
-                  : helper.salary_type === 'hourly'
-                    ? `${t.hoursWorked}: ${payroll.payableDays}`
-                    : `${t.payableDays}: ${payroll.payableDays}`}
-              </Text>
-            </View>
-            {payroll.isPartialMonth && (
-              <Text style={styles.partial}>
-                {t.partMonth}: {formatDateKey(payroll.windowStart)} –{' '}
-                {formatDateKey(payroll.windowEnd)}
-              </Text>
-            )}
-
-            {payroll.unmarkedDays > 0 && (
-              <Pressable
-                style={styles.warn}
-                onPress={() => fillUnmarked({ helper, payroll })}
-              >
-                <Text style={styles.warnText}>
-                  {t.daysBlank(payroll.unmarkedDays)} — {t.notCounted}
-                </Text>
-              </Pressable>
-            )}
-
-            <View style={styles.line}>
-              <Text style={styles.lineLabel}>{t.earned}</Text>
-              <Text style={styles.lineValue}>{formatINR(payroll.earnedPaise)}</Text>
-            </View>
-            {payroll.bonusesPaise > 0 && (
-              <View style={styles.line}>
-                <Text style={styles.lineLabel}>{t.bonus}</Text>
-                <Text style={styles.lineValue}>
-                  +{formatINR(payroll.bonusesPaise)}
-                </Text>
+              <View style={styles.actionRow}>
+                <Pressable
+                  style={styles.actionBtn}
+                  onPress={() => setLedgerFor(helper)}
+                >
+                  <Ionicons name="add" size={16} color={colors.primary} />
+                  <Text style={styles.actionText}>{t.addAdvance}</Text>
+                </Pressable>
+                <Pressable
+                  style={styles.actionBtn}
+                  onPress={() => settleAndShare(helper, payroll, sharePayslipPdf)}
+                >
+                  <Ionicons name="share-outline" size={16} color={colors.primary} />
+                  <Text style={styles.actionText}>{t.pdfSlip}</Text>
+                </Pressable>
               </View>
-            )}
-            {payroll.advancesPaise !== 0 && (
-              <View style={styles.line}>
-                <Text style={styles.lineLabel}>{t.advance}</Text>
-                <Text style={styles.lineValue}>
-                  −{formatINR(payroll.advancesPaise)}
-                </Text>
-              </View>
-            )}
-            {payroll.finesPaise > 0 && (
-              <View style={styles.line}>
-                <Text style={styles.lineLabel}>{t.deduction}</Text>
-                <Text style={styles.lineValue}>−{formatINR(payroll.finesPaise)}</Text>
-              </View>
-            )}
-
-            <View style={[styles.line, styles.netLine]}>
-              <Text style={styles.netLabel}>{t.netPayable}</Text>
-              <Text style={styles.netValue}>
-                {formatINR(payroll.netPayablePaise)}
-              </Text>
             </View>
-
-            <View style={styles.shareRow}>
-              <Pressable
-                style={[styles.shareBtn, styles.shareGhost]}
-                onPress={() => settleAndShare(helper, payroll, sharePayslipText)}
-              >
-                <Text style={styles.shareGhostText}>{t.whatsapp}</Text>
-              </Pressable>
-              <Pressable
-                style={styles.shareBtn}
-                onPress={() => settleAndShare(helper, payroll, sharePayslipPdf)}
-              >
-                <Text style={styles.shareText}>{t.pdfSlip}</Text>
-              </Pressable>
-            </View>
-          </View>
-        ))}
+          );
+        })}
 
         {rows.length === 0 && <Text style={styles.empty}>{t.noWorkers}</Text>}
       </ScrollView>
@@ -422,7 +442,22 @@ const makeStyles = (colors: Colors) =>
   StyleSheet.create({
     safe: { flex: 1, backgroundColor: colors.bg, overflow: 'hidden' },
     header: { paddingHorizontal: space.lg, paddingTop: space.md },
-    titleRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+    titleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    titleLeft: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+    monthsBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: radius.pill,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
     title: { fontSize: 28, fontWeight: '700', color: colors.text },
     periodRow: {
       flexDirection: 'row',
@@ -455,83 +490,91 @@ const makeStyles = (colors: Colors) =>
       padding: space.lg,
       gap: space.xs,
     },
-    name: { fontSize: 17, fontWeight: '600', color: colors.text },
-    balanceRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginTop: space.xs,
-    },
-    balanceTap: { flexShrink: 1 },
-    balanceLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-    balanceLabel: { fontSize: 11, color: colors.muted, textTransform: 'uppercase', letterSpacing: 0.4 },
-    balanceValue: { fontSize: 24, fontWeight: '800', color: colors.text, marginTop: 2 },
-    // Money actually owed is the one number on this card worth a household
-    // acting on, so it gets the same visual weight as "Net payable" below —
-    // an urgent color, not the plain body text color everything else uses.
-    balanceOwed: { color: colors.absent },
-    balanceSettled: { color: colors.present },
-    balanceActions: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-    iconBtn: {
-      width: 34,
-      height: 34,
+    name: { fontSize: 20, fontWeight: '700', color: colors.text },
+    nameRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+    progressPill: {
+      backgroundColor: colors.surfaceAlt,
       borderRadius: radius.pill,
-      borderWidth: 1,
-      borderColor: colors.border,
-      alignItems: 'center',
-      justifyContent: 'center',
+      paddingHorizontal: space.sm,
+      paddingVertical: 2,
     },
-    payBtn: {
-      backgroundColor: colors.primary,
-      paddingHorizontal: space.md,
-      paddingVertical: space.sm,
-      borderRadius: radius.pill,
-    },
-    payBtnDisabled: { backgroundColor: colors.surfaceAlt },
-    payBtnText: { color: colors.onPrimary, fontWeight: '600', fontSize: 12 },
-    payBtnTextDisabled: { color: colors.muted },
-    divider: { height: 1, backgroundColor: colors.border, marginVertical: space.md },
-    // Two separately-labeled lines instead of one string joined by a middle
-    // dot — "₹45/litre · 7.75 litre" read as one run-on number to squint at.
-    rateRow: { gap: 2 },
-    rate: { fontSize: 13, color: colors.muted },
+    progressPillText: { fontSize: 10, fontWeight: '700', color: colors.primary },
     partial: { fontSize: 12, color: colors.leave, marginTop: 2 },
+    // A small pill rather than a full-width banner — the explanation lives in
+    // the dialog it opens, which keeps every card a few lines shorter.
     warn: {
+      alignSelf: 'flex-start',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
       backgroundColor: colors.warn,
-      borderRadius: radius.md,
-      padding: space.md,
-      marginVertical: space.sm,
+      borderRadius: radius.pill,
+      paddingVertical: 4,
+      paddingHorizontal: space.md,
+      marginVertical: space.xs,
     },
-    warnText: { fontSize: 12, color: colors.warnText },
+    warnText: { fontSize: 12, fontWeight: '600', color: colors.warnText },
     line: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       paddingVertical: 3,
     },
-    lineLabel: { fontSize: 14, color: colors.muted },
-    lineValue: { fontSize: 14, color: colors.text },
-    netLine: {
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
+    lineLabel: { fontSize: 14, color: colors.muted, flexShrink: 1 },
+    lineValue: { fontSize: 14, fontWeight: '600', color: colors.text },
+    // The month's bottom line gets its own tinted box and a large figure.
+    netBox: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      backgroundColor: colors.surfaceAlt,
+      borderRadius: radius.md,
+      paddingVertical: space.md,
+      paddingHorizontal: space.md,
       marginTop: space.sm,
-      paddingTop: space.md,
     },
-    netLabel: { fontSize: 15, fontWeight: '700', color: colors.text },
-    netValue: { fontSize: 18, fontWeight: '700', color: colors.primary },
-    shareRow: { flexDirection: 'row', gap: space.sm, marginTop: space.md },
-    shareBtn: {
-      flex: 1,
+    netLabel: { fontSize: 14, fontWeight: '700', color: colors.text, flexShrink: 1 },
+    netValue: { fontSize: 24, fontWeight: '800', color: colors.primary },
+    balanceRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: space.md,
+      marginTop: space.md,
+    },
+    balanceTap: { flexShrink: 1, gap: 2 },
+    balanceLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+    balanceLabel: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: colors.muted,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    balanceValue: { fontSize: 26, fontWeight: '800', color: colors.text },
+    balanceHint: { fontSize: 11, color: colors.muted, marginTop: 4 },
+    balanceOwed: { color: colors.absent },
+    balanceSettled: { color: colors.present },
+    payBtn: {
       backgroundColor: colors.primary,
+      paddingHorizontal: space.lg,
       paddingVertical: space.md,
       borderRadius: radius.pill,
+    },
+    payBtnDisabled: { backgroundColor: colors.surfaceAlt },
+    payBtnText: { color: colors.onPrimary, fontWeight: '700', fontSize: 13 },
+    payBtnTextDisabled: { color: colors.muted },
+    actionRow: { flexDirection: 'row', gap: space.sm, marginTop: space.md },
+    actionBtn: {
+      flex: 1,
+      flexDirection: 'row',
       alignItems: 'center',
-    },
-    shareText: { color: colors.onPrimary, fontWeight: '600', fontSize: 13 },
-    shareGhost: {
-      backgroundColor: 'transparent',
+      justifyContent: 'center',
+      gap: 4,
+      paddingVertical: space.md,
+      borderRadius: radius.pill,
       borderWidth: 1,
-      borderColor: colors.primary,
+      borderColor: colors.border,
     },
-    shareGhostText: { color: colors.primary, fontWeight: '600', fontSize: 13 },
+    actionText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
     empty: { textAlign: 'center', color: colors.muted, marginTop: 48 },
   });

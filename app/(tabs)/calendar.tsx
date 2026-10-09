@@ -149,7 +149,7 @@ export default function CalendarScreen() {
   // this is what actually moves the calendar to the tapped month.
   useFocusEffect(
     useCallback(() => {
-      if (periodParam && periodParam !== period) {
+      if (periodParam && periodParam !== period && periodParam <= currentPeriod()) {
         setPeriod(periodParam);
         if (selectedId) loadMarks(selectedId, periodParam);
       }
@@ -159,8 +159,14 @@ export default function CalendarScreen() {
 
   const canGoBack = canViewPeriod(shiftPeriod(period, -1));
 
+  const canGoForward = shiftPeriod(period, 1) <= currentPeriod();
+
   const changePeriod = (delta: number) => {
     const target = shiftPeriod(period, delta);
+    if (delta > 0 && target > currentPeriod()) {
+      showAppAlert(t.futureMonth, t.futureMonthBody, [{ text: t.ok }]);
+      return;
+    }
     if (delta < 0 && !canViewPeriod(target)) {
       showAppAlert(t.olderMonths, t.olderMonthsBody, [{ text: t.ok }]);
       return;
@@ -266,7 +272,7 @@ export default function CalendarScreen() {
             <Text style={styles.period}>{formatPeriod(period)}</Text>
           </Pressable>
           <Pressable onPress={() => changePeriod(1)} hitSlop={8}>
-            <Text style={styles.arrow}>›</Text>
+            <Text style={[styles.arrow, !canGoForward && styles.arrowLocked]}>›</Text>
           </Pressable>
         </View>
       </View>
